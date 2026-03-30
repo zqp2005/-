@@ -286,14 +286,26 @@ public class SysMenuServiceImpl implements SysMenuService {
 //     * @param menu
 //     * @return: java.lang.String
 //     */
-    private String getRouterPath(SysMenu menu) {
-        String path = menu.getPath();
-         if(menu.getParentId().intValue() == 0 && UserConstants.TYPE_DIR.equals(menu.getMenuType())){
-             path = "/" + menu.getPath();
-         }
-
-         return path;
+//    private String getRouterPath(SysMenu menu) {
+//        String path = menu.getPath();
+//         if(menu.getParentId().intValue() == 0 && UserConstants.TYPE_DIR.equals(menu.getMenuType())){
+//             path = "/" + menu.getPath();
+//         }
+//
+//         return path;
+//    }
+private String getRouterPath(SysMenu menu) {
+    String path = menu.getPath();
+    // 如果是外链，直接返回原始路径，不添加 / 前缀
+    if (UserConstants.YES_FRAME.equals(menu.getIsFrame())) {
+        return path;
     }
+    // 非外链情况下，如果是一级目录菜单，添加 / 前缀
+    if(menu.getParentId().intValue() == 0 && UserConstants.TYPE_DIR.equals(menu.getMenuType())){
+        path = "/" + menu.getPath();
+    }
+    return path;
+}
 //
 //    /**
 //     * 获取路由名称
