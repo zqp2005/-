@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjyVisitorMapper">
+
+    <resultMap type="HjyVisitor" id="HjyVisitorResult">
+        <id     property="visitorId"           column="visitor_id"          />
+        <result property="visitorName"         column="visitor_name"        />
+        <result property="visitorPhoneNumber"  column="visitor_phone_number"/>
+        <result property="visitorDate"        column="visitor_date"        />
+        <result property="createById"          column="create_by_id"        />
+        <result property="createByOpenId"      column="create_by_open_id"   />
+        <result property="communityId"         column="community_id"        />
+        <result property="communityName"       column="community_name"     />
+        <result property="createBy"           column="create_by"           />
+        <result property="createTime"         column="create_time"         />
+        <result property="updateBy"           column="update_by"           />
+        <result property="updateTime"         column="update_time"         />
+        <result property="remark"             column="remark"              />
+    </resultMap>
+
+    <sql id="selectVisitorVo">
+        SELECT v.visitor_id, v.visitor_name, v.visitor_phone_number, v.visitor_date,
+               v.create_by_id, v.create_by_open_id, v.community_id,
+               hc.community_name,
+               v.create_by, v.create_time, v.update_by, v.update_time, v.remark
+        FROM hjy_visitor v
+        LEFT JOIN hjy_community hc ON v.community_id = hc.community_id
+    </sql>
+
+    <select id="selectVisitorList" parameterType="HjyVisitor" resultMap="HjyVisitorResult">
+        <include refid="selectVisitorVo"/>
+        WHERE 1=1
+        <if test="visitorName != null and visitorName != ''">
+            AND v.visitor_name LIKE CONCAT('%', #{visitorName}, '%')
+        </if>
+        <if test="visitorPhoneNumber != null and visitorPhoneNumber != ''">
+            AND v.visitor_phone_number LIKE CONCAT('%', #{visitorPhoneNumber}, '%')
+        </if>
+        <if test="communityId != null">
+            AND v.community_id = #{communityId}
+        </if>
+        ORDER BY v.create_time DESC
+    </select>
+
+    <select id="selectVisitorById" parameterType="Long" resultMap="HjyVisitorResult">
+        <include refid="selectVisitorVo"/>
+        WHERE v.visitor_id = #{visitorId}
+    </select>
+
+    <insert id="insertVisitor" parameterType="HjyVisitor" useGeneratedKeys="true" keyProperty="visitorId">
+        INSERT INTO hjy_visitor
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="visitorName != null and visitorName != ''">visitor_name,</if>
+            <if test="visitorPhoneNumber != null and visitorPhoneNumber != ''">visitor_phone_number,</if>
+            <if test="visitorDate != null">visitor_date,</if>
+            <if test="createById != null">create_by_id,</if>
+            <if test="createByOpenId != null and createByOpenId != ''">create_by_open_id,</if>
+            <if test="communityId != null">community_id,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="visitorName != null and visitorName != ''">#{visitorName},</if>
+            <if test="visitorPhoneNumber != null and visitorPhoneNumber != ''">#{visitorPhoneNumber},</if>
+            <if test="visitorDate != null">#{visitorDate},</if>
+            <if test="createById != null">#{createById},</if>
+            <if test="createByOpenId != null and createByOpenId != ''">#{createByOpenId},</if>
+            <if test="communityId != null">#{communityId},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateVisitor" parameterType="HjyVisitor">
+        UPDATE hjy_visitor
+        <set>
+            <if test="visitorName != null and visitorName != ''">visitor_name = #{visitorName},</if>
+            <if test="visitorPhoneNumber != null and visitorPhoneNumber != ''">visitor_phone_number = #{visitorPhoneNumber},</if>
+            <if test="visitorDate != null">visitor_date = #{visitorDate},</if>
+            <if test="communityId != null">community_id = #{communityId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE visitor_id = #{visitorId}
+    </update>
+
+    <delete id="deleteVisitorById" parameterType="Long">
+        DELETE FROM hjy_visitor WHERE visitor_id = #{visitorId}
+    </delete>
+
+    <delete id="deleteVisitorByIds" parameterType="Long">
+        DELETE FROM hjy_visitor WHERE visitor_id IN
+        <foreach collection="array" item="visitorId" open="(" separator="," close=")">
+            #{visitorId}
+        </foreach>
+    </delete>
+
+</mapper>

@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjyRepairMapper">
+
+    <resultMap type="HjyRepair" id="HjyRepairResult">
+        <id     property="repairId"              column="repair_id"             />
+        <result property="repairNum"            column="repair_num"           />
+        <result property="repairState"          column="repair_state"         />
+        <result property="ownerRealName"        column="owner_real_name"      />
+        <result property="ownerPhoneNumber"      column="owner_phone_number"   />
+        <result property="repairContent"        column="repair_content"       />
+        <result property="address"              column="address"              />
+        <result property="doorTime"             column="door_time"            />
+        <result property="assignmentTime"       column="assignment_time"      />
+        <result property="assignmentId"          column="assignment_id"        />
+        <result property="receivingOrdersTime"  column="receiving_orders_time"/>
+        <result property="completeId"           column="complete_id"          />
+        <result property="completeName"         column="complete_name"        />
+        <result property="completePhone"        column="complete_phone"       />
+        <result property="completeTime"         column="complete_time"        />
+        <result property="cancelTime"           column="cancel_time"          />
+        <result property="communityId"           column="community_id"         />
+        <result property="communityName"         column="community_name"       />
+        <result property="createBy"           column="create_by"           />
+        <result property="createTime"         column="create_time"         />
+        <result property="updateBy"           column="update_by"           />
+        <result property="updateTime"         column="update_time"         />
+        <result property="remark"             column="remark"              />
+    </resultMap>
+
+    <sql id="selectRepairVo">
+        SELECT r.repair_id, r.repair_num, r.repair_state, r.owner_real_name, r.owner_phone_number,
+               r.repair_content, r.address, r.door_time, r.assignment_time, r.assignment_id,
+               r.receiving_orders_time, r.complete_id, r.complete_name, r.complete_phone,
+               r.complete_time, r.cancel_time, r.community_id, hc.community_name,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        FROM hjy_repair r
+        LEFT JOIN hjy_community hc ON r.community_id = hc.community_id
+    </sql>
+
+    <select id="selectRepairList" parameterType="HjyRepair" resultMap="HjyRepairResult">
+        <include refid="selectRepairVo"/>
+        WHERE 1=1
+        <if test="repairNum != null and repairNum != ''">
+            AND r.repair_num LIKE CONCAT('%', #{repairNum}, '%')
+        </if>
+        <if test="repairState != null and repairState != ''">
+            AND r.repair_state = #{repairState}
+        </if>
+        <if test="ownerRealName != null and ownerRealName != ''">
+            AND r.owner_real_name LIKE CONCAT('%', #{ownerRealName}, '%')
+        </if>
+        <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">
+            AND r.owner_phone_number LIKE CONCAT('%', #{ownerPhoneNumber}, '%')
+        </if>
+        <if test="communityId != null">
+            AND r.community_id = #{communityId}
+        </if>
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="selectRepairById" parameterType="Long" resultMap="HjyRepairResult">
+        <include refid="selectRepairVo"/>
+        WHERE r.repair_id = #{repairId}
+    </select>
+
+    <insert id="insertRepair" parameterType="HjyRepair" useGeneratedKeys="true" keyProperty="repairId">
+        INSERT INTO hjy_repair
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="repairNum != null and repairNum != ''">repair_num,</if>
+            <if test="repairState != null and repairState != ''">repair_state,</if>
+            <if test="ownerRealName != null and ownerRealName != ''">owner_real_name,</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number,</if>
+            <if test="repairContent != null and repairContent != ''">repair_content,</if>
+            <if test="address != null and address != ''">address,</if>
+            <if test="doorTime != null">door_time,</if>
+            <if test="communityId != null">community_id,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="repairNum != null and repairNum != ''">#{repairNum},</if>
+            <if test="repairState != null and repairState != ''">#{repairState},</if>
+            <if test="ownerRealName != null and ownerRealName != ''">#{ownerRealName},</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">#{ownerPhoneNumber},</if>
+            <if test="repairContent != null and repairContent != ''">#{repairContent},</if>
+            <if test="address != null and address != ''">#{address},</if>
+            <if test="doorTime != null">#{doorTime},</if>
+            <if test="communityId != null">#{communityId},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateRepair" parameterType="HjyRepair">
+        UPDATE hjy_repair
+        <set>
+            <if test="repairNum != null and repairNum != ''">repair_num = #{repairNum},</if>
+            <if test="repairState != null and repairState != ''">repair_state = #{repairState},</if>
+            <if test="ownerRealName != null and ownerRealName != ''">owner_real_name = #{ownerRealName},</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number = #{ownerPhoneNumber},</if>
+            <if test="repairContent != null and repairContent != ''">repair_content = #{repairContent},</if>
+            <if test="address != null and address != ''">address = #{address},</if>
+            <if test="doorTime != null">door_time = #{doorTime},</if>
+            <if test="assignmentTime != null">assignment_time = #{assignmentTime},</if>
+            <if test="assignmentId != null">assignment_id = #{assignmentId},</if>
+            <if test="receivingOrdersTime != null">receiving_orders_time = #{receivingOrdersTime},</if>
+            <if test="completeId != null">complete_id = #{completeId},</if>
+            <if test="completeName != null and completeName != ''">complete_name = #{completeName},</if>
+            <if test="completePhone != null and completePhone != ''">complete_phone = #{completePhone},</if>
+            <if test="completeTime != null">complete_time = #{completeTime},</if>
+            <if test="cancelTime != null">cancel_time = #{cancelTime},</if>
+            <if test="communityId != null">community_id = #{communityId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE repair_id = #{repairId}
+    </update>
+
+    <delete id="deleteRepairById" parameterType="Long">
+        DELETE FROM hjy_repair WHERE repair_id = #{repairId}
+    </delete>
+
+    <delete id="deleteRepairByIds" parameterType="Long">
+        DELETE FROM hjy_repair WHERE repair_id IN
+        <foreach collection="array" item="repairId" open="(" separator="," close=")">
+            #{repairId}
+        </foreach>
+    </delete>
+
+</mapper>

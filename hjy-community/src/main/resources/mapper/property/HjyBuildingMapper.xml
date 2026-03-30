@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjyBuildingMapper">
+
+    <resultMap type="HjyBuilding" id="HjyBuildingResult">
+        <id     property="buildingId"       column="building_id"      />
+        <result property="buildingName"     column="building_name"    />
+        <result property="buildingCode"     column="building_code"    />
+        <result property="buildingAcreage" column="building_acreage"  />
+        <result property="communityId"      column="community_id"     />
+        <result property="communityName"   column="community_name"   />
+        <result property="createBy"        column="create_by"        />
+        <result property="createTime"      column="create_time"      />
+        <result property="updateBy"        column="update_by"        />
+        <result property="updateTime"      column="update_time"      />
+        <result property="remark"          column="remark"           />
+    </resultMap>
+
+    <sql id="selectBuildingVo">
+        SELECT b.building_id, b.building_name, b.building_code, b.building_acreage,
+               b.community_id, hc.community_name,
+               b.create_by, b.create_time, b.update_by, b.update_time, b.remark
+        FROM hjy_building b
+        LEFT JOIN hjy_community hc ON b.community_id = hc.community_id
+    </sql>
+
+    <select id="selectBuildingList" parameterType="HjyBuilding" resultMap="HjyBuildingResult">
+        <include refid="selectBuildingVo"/>
+        WHERE 1=1
+        <if test="buildingName != null and buildingName != ''">
+            AND b.building_name LIKE CONCAT('%', #{buildingName}, '%')
+        </if>
+        <if test="buildingCode != null and buildingCode != ''">
+            AND b.building_code = #{buildingCode}
+        </if>
+        <if test="communityId != null">
+            AND b.community_id = #{communityId}
+        </if>
+        ORDER BY b.create_time DESC
+    </select>
+
+    <select id="selectBuildingById" parameterType="Long" resultMap="HjyBuildingResult">
+        <include refid="selectBuildingVo"/>
+        WHERE b.building_id = #{buildingId}
+    </select>
+
+    <insert id="insertBuilding" parameterType="HjyBuilding" useGeneratedKeys="true" keyProperty="buildingId">
+        INSERT INTO hjy_building
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="buildingName != null and buildingName != ''">building_name,</if>
+            <if test="buildingCode != null and buildingCode != ''">building_code,</if>
+            <if test="buildingAcreage != null and buildingAcreage != ''">building_acreage,</if>
+            <if test="communityId != null">community_id,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="buildingName != null and buildingName != ''">#{buildingName},</if>
+            <if test="buildingCode != null and buildingCode != ''">#{buildingCode},</if>
+            <if test="buildingAcreage != null and buildingAcreage != ''">#{buildingAcreage},</if>
+            <if test="communityId != null">#{communityId},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateBuilding" parameterType="HjyBuilding">
+        UPDATE hjy_building
+        <set>
+            <if test="buildingName != null and buildingName != ''">building_name = #{buildingName},</if>
+            <if test="buildingCode != null and buildingCode != ''">building_code = #{buildingCode},</if>
+            <if test="buildingAcreage != null and buildingAcreage != ''">building_acreage = #{buildingAcreage},</if>
+            <if test="communityId != null">community_id = #{communityId},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE building_id = #{buildingId}
+    </update>
+
+    <delete id="deleteBuildingById" parameterType="Long">
+        DELETE FROM hjy_building WHERE building_id = #{buildingId}
+    </delete>
+
+    <delete id="deleteBuildingByIds" parameterType="Long">
+        DELETE FROM hjy_building WHERE building_id IN
+        <foreach collection="array" item="buildingId" open="(" separator="," close=")">
+            #{buildingId}
+        </foreach>
+    </delete>
+
+    <select id="selectBuildingPullDown" resultMap="HjyBuildingResult">
+        SELECT building_id, building_name, building_code, community_id
+        FROM hjy_building
+        <where>
+            <if test="communityId != null">
+                AND community_id = #{communityId}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

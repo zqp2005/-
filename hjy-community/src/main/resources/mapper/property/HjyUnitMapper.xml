@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjyUnitMapper">
+
+    <resultMap type="HjyUnit" id="HjyUnitResult">
+        <id     property="unitId"           column="unit_id"           />
+        <result property="buildingId"       column="building_id"       />
+        <result property="communityId"      column="community_id"      />
+        <result property="unitName"         column="unit_name"         />
+        <result property="unitCode"         column="unit_code"         />
+        <result property="unitLevel"        column="unit_level"         />
+        <result property="unitAcreage"     column="unit_acreage"       />
+        <result property="unitHaveElevator" column="unit_have_elevator" />
+        <result property="buildingName"     column="building_name"     />
+        <result property="communityName"    column="community_name"    />
+        <result property="createBy"         column="create_by"         />
+        <result property="createTime"       column="create_time"       />
+        <result property="updateBy"         column="update_by"         />
+        <result property="updateTime"       column="update_time"       />
+        <result property="remark"           column="remark"            />
+    </resultMap>
+
+    <sql id="selectUnitVo">
+        SELECT u.unit_id, u.building_id, u.community_id, u.unit_name, u.unit_code,
+               u.unit_level, u.unit_acreage, u.unit_have_elevator,
+               b.building_name, hc.community_name,
+               u.create_by, u.create_time, u.update_by, u.update_time, u.remark
+        FROM hjy_unit u
+        LEFT JOIN hjy_building b ON u.building_id = b.building_id
+        LEFT JOIN hjy_community hc ON u.community_id = hc.community_id
+    </sql>
+
+    <select id="selectUnitList" parameterType="HjyUnit" resultMap="HjyUnitResult">
+        <include refid="selectUnitVo"/>
+        WHERE 1=1
+        <if test="unitName != null and unitName != ''">
+            AND u.unit_name LIKE CONCAT('%', #{unitName}, '%')
+        </if>
+        <if test="unitCode != null and unitCode != ''">
+            AND u.unit_code = #{unitCode}
+        </if>
+        <if test="communityId != null">
+            AND u.community_id = #{communityId}
+        </if>
+        <if test="buildingId != null">
+            AND u.building_id = #{buildingId}
+        </if>
+        ORDER BY u.create_time DESC
+    </select>
+
+    <select id="selectUnitById" parameterType="Long" resultMap="HjyUnitResult">
+        <include refid="selectUnitVo"/>
+        WHERE u.unit_id = #{unitId}
+    </select>
+
+    <insert id="insertUnit" parameterType="HjyUnit" useGeneratedKeys="true" keyProperty="unitId">
+        INSERT INTO hjy_unit
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="buildingId != null">building_id,</if>
+            <if test="communityId != null">community_id,</if>
+            <if test="unitName != null and unitName != ''">unit_name,</if>
+            <if test="unitCode != null and unitCode != ''">unit_code,</if>
+            <if test="unitLevel != null">unit_level,</if>
+            <if test="unitAcreage != null and unitAcreage != ''">unit_acreage,</if>
+            <if test="unitHaveElevator != null and unitHaveElevator != ''">unit_have_elevator,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="buildingId != null">#{buildingId},</if>
+            <if test="communityId != null">#{communityId},</if>
+            <if test="unitName != null and unitName != ''">#{unitName},</if>
+            <if test="unitCode != null and unitCode != ''">#{unitCode},</if>
+            <if test="unitLevel != null">#{unitLevel},</if>
+            <if test="unitAcreage != null and unitAcreage != ''">#{unitAcreage},</if>
+            <if test="unitHaveElevator != null and unitHaveElevator != ''">#{unitHaveElevator},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateUnit" parameterType="HjyUnit">
+        UPDATE hjy_unit
+        <set>
+            <if test="buildingId != null">building_id = #{buildingId},</if>
+            <if test="communityId != null">community_id = #{communityId},</if>
+            <if test="unitName != null and unitName != ''">unit_name = #{unitName},</if>
+            <if test="unitCode != null and unitCode != ''">unit_code = #{unitCode},</if>
+            <if test="unitLevel != null">unit_level = #{unitLevel},</if>
+            <if test="unitAcreage != null and unitAcreage != ''">unit_acreage = #{unitAcreage},</if>
+            <if test="unitHaveElevator != null and unitHaveElevator != ''">unit_have_elevator = #{unitHaveElevator},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE unit_id = #{unitId}
+    </update>
+
+    <delete id="deleteUnitById" parameterType="Long">
+        DELETE FROM hjy_unit WHERE unit_id = #{unitId}
+    </delete>
+
+    <delete id="deleteUnitByIds" parameterType="Long">
+        DELETE FROM hjy_unit WHERE unit_id IN
+        <foreach collection="array" item="unitId" open="(" separator="," close=")">
+            #{unitId}
+        </foreach>
+    </delete>
+
+    <select id="selectUnitPullDown" resultMap="HjyUnitResult">
+        SELECT unit_id, unit_name, unit_code, building_id, community_id
+        FROM hjy_unit
+        <where>
+            <if test="buildingId != null">
+                AND building_id = #{buildingId}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

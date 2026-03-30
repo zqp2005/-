@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjyOwnerRoomMapper">
+
+    <resultMap type="HjyOwnerRoom" id="HjyOwnerRoomResult">
+        <id     property="ownerRoomId"        column="owner_room_id"      />
+        <result property="communityId"         column="community_id"       />
+        <result property="buildingId"         column="building_id"       />
+        <result property="unitId"            column="unit_id"           />
+        <result property="roomId"             column="room_id"           />
+        <result property="ownerId"             column="owner_id"          />
+        <result property="ownerType"          column="owner_type"        />
+        <result property="roomStatus"         column="room_status"       />
+        <result property="communityName"      column="community_name"   />
+        <result property="buildingName"      column="building_name"    />
+        <result property="unitName"          column="unit_name"        />
+        <result property="roomName"          column="room_name"        />
+        <result property="ownerRealName"     column="owner_real_name"  />
+        <result property="ownerPhoneNumber"  column="owner_phone_number"/>
+        <result property="createBy"          column="create_by"        />
+        <result property="createTime"        column="create_time"       />
+        <result property="updateBy"          column="update_by"        />
+        <result property="updateTime"         column="update_time"       />
+        <result property="remark"            column="remark"           />
+    </resultMap>
+
+    <resultMap type="HjyOwnerRoomRecord" id="HjyOwnerRoomRecordResult">
+        <id     property="recordId"           column="record_id"         />
+        <result property="ownerRoomId"         column="owner_room_id"     />
+        <result property="roomStatus"         column="room_status"       />
+        <result property="recordAuditOpinion" column="record_audit_opinion"/>
+        <result property="recordAuditType"   column="record_audit_type"/>
+        <result property="createBy"          column="create_by"        />
+        <result property="createTime"        column="create_time"       />
+        <result property="remark"            column="remark"           />
+    </resultMap>
+
+    <sql id="selectOwnerRoomVo">
+        SELECT r.owner_room_id, r.community_id, r.building_id, r.unit_id, r.room_id,
+               r.owner_id, r.owner_type, r.room_status,
+               hc.community_name, b.building_name, u.unit_name, rm.room_name,
+               o.owner_real_name, o.owner_phone_number,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        FROM hjy_owner_room r
+        LEFT JOIN hjy_community hc ON r.community_id = hc.community_id
+        LEFT JOIN hjy_building b ON r.building_id = b.building_id
+        LEFT JOIN hjy_unit u ON r.unit_id = u.unit_id
+        LEFT JOIN hjy_room rm ON r.room_id = rm.room_id
+        LEFT JOIN hjy_owner o ON r.owner_id = o.owner_id
+    </sql>
+
+    <select id="selectOwnerRoomList" parameterType="HjyOwnerRoom" resultMap="HjyOwnerRoomResult">
+        <include refid="selectOwnerRoomVo"/>
+        WHERE 1=1
+        <if test="communityId != null">
+            AND r.community_id = #{communityId}
+        </if>
+        <if test="ownerId != null">
+            AND r.owner_id = #{ownerId}
+        </if>
+        <if test="roomStatus != null and roomStatus != ''">
+            AND r.room_status = #{roomStatus}
+        </if>
+        <if test="ownerRealName != null and ownerRealName != ''">
+            AND o.owner_real_name LIKE CONCAT('%', #{ownerRealName}, '%')
+        </if>
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="selectOwnerRoomById" parameterType="Long" resultMap="HjyOwnerRoomResult">
+        <include refid="selectOwnerRoomVo"/>
+        WHERE r.owner_room_id = #{ownerRoomId}
+    </select>
+
+    <insert id="insertOwnerRoom" parameterType="HjyOwnerRoom" useGeneratedKeys="true" keyProperty="ownerRoomId">
+        INSERT INTO hjy_owner_room
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="communityId != null">community_id,</if>
+            <if test="buildingId != null">building_id,</if>
+            <if test="unitId != null">unit_id,</if>
+            <if test="roomId != null">room_id,</if>
+            <if test="ownerId != null">owner_id,</if>
+            <if test="ownerType != null and ownerType != ''">owner_type,</if>
+            <if test="roomStatus != null and roomStatus != ''">room_status,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="communityId != null">#{communityId},</if>
+            <if test="buildingId != null">#{buildingId},</if>
+            <if test="unitId != null">#{unitId},</if>
+            <if test="roomId != null">#{roomId},</if>
+            <if test="ownerId != null">#{ownerId},</if>
+            <if test="ownerType != null and ownerType != ''">#{ownerType},</if>
+            <if test="roomStatus != null and roomStatus != ''">#{roomStatus},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateOwnerRoom" parameterType="HjyOwnerRoom">
+        UPDATE hjy_owner_room
+        <set>
+            <if test="communityId != null">community_id = #{communityId},</if>
+            <if test="buildingId != null">building_id = #{buildingId},</if>
+            <if test="unitId != null">unit_id = #{unitId},</if>
+            <if test="roomId != null">room_id = #{roomId},</if>
+            <if test="ownerId != null">owner_id = #{ownerId},</if>
+            <if test="ownerType != null and ownerType != ''">owner_type = #{ownerType},</if>
+            <if test="roomStatus != null and roomStatus != ''">room_status = #{roomStatus},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE owner_room_id = #{ownerRoomId}
+    </update>
+
+    <delete id="deleteOwnerRoomById" parameterType="Long">
+        DELETE FROM hjy_owner_room WHERE owner_room_id = #{ownerRoomId}
+    </delete>
+
+    <delete id="deleteOwnerRoomByIds" parameterType="Long">
+        DELETE FROM hjy_owner_room WHERE owner_room_id IN
+        <foreach collection="array" item="ownerRoomId" open="(" separator="," close=")">
+            #{ownerRoomId}
+        </foreach>
+    </delete>
+
+    <select id="selectRecordList" parameterType="Long" resultMap="HjyOwnerRoomRecordResult">
+        SELECT record_id, owner_room_id, room_status, record_audit_opinion, record_audit_type,
+               create_by, create_time, remark
+        FROM zy_owner_room_record
+        WHERE owner_room_id = #{ownerRoomId}
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insertRecord" parameterType="HjyOwnerRoomRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO zy_owner_room_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ownerRoomId != null">owner_room_id,</if>
+            <if test="roomStatus != null and roomStatus != ''">room_status,</if>
+            <if test="recordAuditOpinion != null and recordAuditOpinion != ''">record_audit_opinion,</if>
+            <if test="recordAuditType != null and recordAuditType != ''">record_audit_type,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="ownerRoomId != null">#{ownerRoomId},</if>
+            <if test="roomStatus != null and roomStatus != ''">#{roomStatus},</if>
+            <if test="recordAuditOpinion != null and recordAuditOpinion != ''">#{recordAuditOpinion},</if>
+            <if test="recordAuditType != null and recordAuditType != ''">#{recordAuditType},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+</mapper>

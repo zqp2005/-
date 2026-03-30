@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjyRoomMapper">
+
+    <resultMap type="HjyRoom" id="HjyRoomResult">
+        <id     property="roomId"              column="room_id"             />
+        <result property="buildingId"           column="building_id"          />
+        <result property="unitId"              column="unit_id"             />
+        <result property="communityId"          column="community_id"         />
+        <result property="roomName"            column="room_name"           />
+        <result property="roomCode"            column="room_code"           />
+        <result property="roomLevel"           column="room_level"          />
+        <result property="roomAcreage"         column="room_acreage"        />
+        <result property="roomCost"            column="room_cost"           />
+        <result property="roomStatus"           column="room_status"         />
+        <result property="roomIsShop"          column="room_is_shop"        />
+        <result property="roomSCommercialHouse" column="room_s_commercial_house" />
+        <result property="roomHouseType"       column="room_house_type"      />
+        <result property="buildingName"        column="building_name"       />
+        <result property="unitName"            column="unit_name"           />
+        <result property="communityName"       column="community_name"      />
+        <result property="createBy"           column="create_by"           />
+        <result property="createTime"         column="create_time"         />
+        <result property="updateBy"           column="update_by"           />
+        <result property="updateTime"         column="update_time"         />
+        <result property="remark"             column="remark"              />
+    </resultMap>
+
+    <sql id="selectRoomVo">
+        SELECT r.room_id, r.building_id, r.unit_id, r.community_id, r.room_name, r.room_code,
+               r.room_level, r.room_acreage, r.room_cost, r.room_status, r.room_is_shop,
+               r.room_s_commercial_house, r.room_house_type,
+               b.building_name, u.unit_name, hc.community_name,
+               r.create_by, r.create_time, r.update_by, r.update_time, r.remark
+        FROM hjy_room r
+        LEFT JOIN hjy_building b ON r.building_id = b.building_id
+        LEFT JOIN hjy_unit u ON r.unit_id = u.unit_id
+        LEFT JOIN hjy_community hc ON r.community_id = hc.community_id
+    </sql>
+
+    <select id="selectRoomList" parameterType="HjyRoom" resultMap="HjyRoomResult">
+        <include refid="selectRoomVo"/>
+        WHERE 1=1
+        <if test="roomName != null and roomName != ''">
+            AND r.room_name LIKE CONCAT('%', #{roomName}, '%')
+        </if>
+        <if test="roomCode != null and roomCode != ''">
+            AND r.room_code = #{roomCode}
+        </if>
+        <if test="communityId != null">
+            AND r.community_id = #{communityId}
+        </if>
+        <if test="buildingId != null">
+            AND r.building_id = #{buildingId}
+        </if>
+        <if test="unitId != null">
+            AND r.unit_id = #{unitId}
+        </if>
+        <if test="roomStatus != null and roomStatus != ''">
+            AND r.room_status = #{roomStatus}
+        </if>
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="selectRoomById" parameterType="Long" resultMap="HjyRoomResult">
+        <include refid="selectRoomVo"/>
+        WHERE r.room_id = #{roomId}
+    </select>
+
+    <insert id="insertRoom" parameterType="HjyRoom" useGeneratedKeys="true" keyProperty="roomId">
+        INSERT INTO hjy_room
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="buildingId != null">building_id,</if>
+            <if test="unitId != null">unit_id,</if>
+            <if test="communityId != null">community_id,</if>
+            <if test="roomName != null and roomName != ''">room_name,</if>
+            <if test="roomCode != null and roomCode != ''">room_code,</if>
+            <if test="roomLevel != null">room_level,</if>
+            <if test="roomAcreage != null and roomAcreage != ''">room_acreage,</if>
+            <if test="roomCost != null and roomCost != ''">room_cost,</if>
+            <if test="roomStatus != null and roomStatus != ''">room_status,</if>
+            <if test="roomIsShop != null and roomIsShop != ''">room_is_shop,</if>
+            <if test="roomSCommercialHouse != null and roomSCommercialHouse != ''">room_s_commercial_house,</if>
+            <if test="roomHouseType != null and roomHouseType != ''">room_house_type,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="buildingId != null">#{buildingId},</if>
+            <if test="unitId != null">#{unitId},</if>
+            <if test="communityId != null">#{communityId},</if>
+            <if test="roomName != null and roomName != ''">#{roomName},</if>
+            <if test="roomCode != null and roomCode != ''">#{roomCode},</if>
+            <if test="roomLevel != null">#{roomLevel},</if>
+            <if test="roomAcreage != null and roomAcreage != ''">#{roomAcreage},</if>
+            <if test="roomCost != null and roomCost != ''">#{roomCost},</if>
+            <if test="roomStatus != null and roomStatus != ''">#{roomStatus},</if>
+            <if test="roomIsShop != null and roomIsShop != ''">#{roomIsShop},</if>
+            <if test="roomSCommercialHouse != null and roomSCommercialHouse != ''">#{roomSCommercialHouse},</if>
+            <if test="roomHouseType != null and roomHouseType != ''">#{roomHouseType},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateRoom" parameterType="HjyRoom">
+        UPDATE hjy_room
+        <set>
+            <if test="buildingId != null">building_id = #{buildingId},</if>
+            <if test="unitId != null">unit_id = #{unitId},</if>
+            <if test="communityId != null">community_id = #{communityId},</if>
+            <if test="roomName != null and roomName != ''">room_name = #{roomName},</if>
+            <if test="roomCode != null and roomCode != ''">room_code = #{roomCode},</if>
+            <if test="roomLevel != null">room_level = #{roomLevel},</if>
+            <if test="roomAcreage != null and roomAcreage != ''">room_acreage = #{roomAcreage},</if>
+            <if test="roomCost != null and roomCost != ''">room_cost = #{roomCost},</if>
+            <if test="roomStatus != null and roomStatus != ''">room_status = #{roomStatus},</if>
+            <if test="roomIsShop != null and roomIsShop != ''">room_is_shop = #{roomIsShop},</if>
+            <if test="roomSCommercialHouse != null and roomSCommercialHouse != ''">room_s_commercial_house = #{roomSCommercialHouse},</if>
+            <if test="roomHouseType != null and roomHouseType != ''">room_house_type = #{roomHouseType},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE room_id = #{roomId}
+    </update>
+
+    <delete id="deleteRoomById" parameterType="Long">
+        DELETE FROM hjy_room WHERE room_id = #{roomId}
+    </delete>
+
+    <delete id="deleteRoomByIds" parameterType="Long">
+        DELETE FROM hjy_room WHERE room_id IN
+        <foreach collection="array" item="roomId" open="(" separator="," close=")">
+            #{roomId}
+        </foreach>
+    </delete>
+
+    <select id="selectRoomPullDown" resultMap="HjyRoomResult">
+        SELECT room_id, room_name, room_code, unit_id, building_id, community_id
+        FROM hjy_room
+        <where>
+            <if test="unitId != null">
+                AND unit_id = #{unitId}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

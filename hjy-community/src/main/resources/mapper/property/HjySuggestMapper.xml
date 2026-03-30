@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjySuggestMapper">
+
+    <resultMap type="HjySuggest" id="HjySuggestResult">
+        <id     property="complaintSuggestId"      column="complaint_suggest_id"     />
+        <result property="complaintSuggestType"    column="complaint_suggest_type"   />
+        <result property="complaintSuggestContent" column="complaint_suggest_content"/>
+        <result property="ownerRealName"           column="owner_real_name"         />
+        <result property="ownerPhoneNumber"         column="owner_phone_number"       />
+        <result property="urlList"                column="url_list"                />
+        <result property="createBy"              column="create_by"               />
+        <result property="createTime"            column="create_time"             />
+        <result property="updateBy"              column="update_by"               />
+        <result property="updateTime"            column="update_time"             />
+        <result property="remark"                column="remark"                  />
+    </resultMap>
+
+    <sql id="selectSuggestVo">
+        SELECT complaint_suggest_id, complaint_suggest_type, complaint_suggest_content,
+               owner_real_name, owner_phone_number, url_list,
+               create_by, create_time, update_by, update_time, remark
+        FROM hjy_suggest
+    </sql>
+
+    <select id="selectSuggestList" parameterType="HjySuggest" resultMap="HjySuggestResult">
+        <include refid="selectSuggestVo"/>
+        WHERE 1=1
+        <if test="complaintSuggestType != null and complaintSuggestType != ''">
+            AND complaint_suggest_type = #{complaintSuggestType}
+        </if>
+        <if test="ownerRealName != null and ownerRealName != ''">
+            AND owner_real_name LIKE CONCAT('%', #{ownerRealName}, '%')
+        </if>
+        <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">
+            AND owner_phone_number LIKE CONCAT('%', #{ownerPhoneNumber}, '%')
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectSuggestById" parameterType="Long" resultMap="HjySuggestResult">
+        <include refid="selectSuggestVo"/>
+        WHERE complaint_suggest_id = #{complaintSuggestId}
+    </select>
+
+    <insert id="insertSuggest" parameterType="HjySuggest" useGeneratedKeys="true" keyProperty="complaintSuggestId">
+        INSERT INTO hjy_suggest
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="complaintSuggestType != null and complaintSuggestType != ''">complaint_suggest_type,</if>
+            <if test="complaintSuggestContent != null and complaintSuggestContent != ''">complaint_suggest_content,</if>
+            <if test="ownerRealName != null and ownerRealName != ''">owner_real_name,</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number,</if>
+            <if test="urlList != null and urlList != ''">url_list,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="complaintSuggestType != null and complaintSuggestType != ''">#{complaintSuggestType},</if>
+            <if test="complaintSuggestContent != null and complaintSuggestContent != ''">#{complaintSuggestContent},</if>
+            <if test="ownerRealName != null and ownerRealName != ''">#{ownerRealName},</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">#{ownerPhoneNumber},</if>
+            <if test="urlList != null and urlList != ''">#{urlList},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateSuggest" parameterType="HjySuggest">
+        UPDATE hjy_suggest
+        <set>
+            <if test="complaintSuggestType != null and complaintSuggestType != ''">complaint_suggest_type = #{complaintSuggestType},</if>
+            <if test="complaintSuggestContent != null and complaintSuggestContent != ''">complaint_suggest_content = #{complaintSuggestContent},</if>
+            <if test="ownerRealName != null and ownerRealName != ''">owner_real_name = #{ownerRealName},</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number = #{ownerPhoneNumber},</if>
+            <if test="urlList != null and urlList != ''">url_list = #{urlList},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE complaint_suggest_id = #{complaintSuggestId}
+    </update>
+
+    <delete id="deleteSuggestById" parameterType="Long">
+        DELETE FROM hjy_suggest WHERE complaint_suggest_id = #{complaintSuggestId}
+    </delete>
+
+    <delete id="deleteSuggestByIds" parameterType="Long">
+        DELETE FROM hjy_suggest WHERE complaint_suggest_id IN
+        <foreach collection="array" item="complaintSuggestId" open="(" separator="," close=")">
+            #{complaintSuggestId}
+        </foreach>
+    </delete>
+
+</mapper>

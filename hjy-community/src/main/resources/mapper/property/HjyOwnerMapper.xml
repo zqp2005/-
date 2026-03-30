@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.msb.hjycommunity.property.mapper.HjyOwnerMapper">
+
+    <resultMap type="HjyOwner" id="HjyOwnerResult">
+        <id     property="ownerId"            column="owner_id"           />
+        <result property="ownerNickname"      column="owner_nickname"     />
+        <result property="ownerRealName"      column="owner_real_name"    />
+        <result property="ownerGender"        column="owner_gender"       />
+        <result property="ownerAge"           column="owner_age"          />
+        <result property="ownerIdCard"        column="owner_id_card"      />
+        <result property="ownerPhoneNumber"   column="owner_phone_number" />
+        <result property="ownerOpenId"        column="owner_open_id"      />
+        <result property="ownerWechatId"      column="owner_wechat_id"    />
+        <result property="ownerQqNumber"      column="owner_qq_number"   />
+        <result property="ownerBirthday"      column="owner_birthday"     />
+        <result property="ownerPortrait"      column="owner_portrait"    />
+        <result property="ownerSignature"     column="owner_signature"   />
+        <result property="ownerStatus"        column="owner_status"       />
+        <result property="ownerLogonMode"     column="owner_logon_mode"  />
+        <result property="ownerType"          column="owner_type"         />
+        <result property="ownerPassword"      column="owner_password"    />
+        <result property="createBy"           column="create_by"         />
+        <result property="createTime"         column="create_time"       />
+        <result property="updateBy"           column="update_by"         />
+        <result property="updateTime"         column="update_time"       />
+        <result property="remark"             column="remark"            />
+    </resultMap>
+
+    <sql id="selectOwnerVo">
+        SELECT owner_id, owner_nickname, owner_real_name, owner_gender, owner_age,
+               owner_id_card, owner_phone_number, owner_open_id, owner_wechat_id,
+               owner_qq_number, owner_birthday, owner_portrait, owner_signature,
+               owner_status, owner_logon_mode, owner_type, owner_password,
+               create_by, create_time, update_by, update_time, remark
+        FROM hjy_owner
+    </sql>
+
+    <select id="selectOwnerList" parameterType="HjyOwner" resultMap="HjyOwnerResult">
+        <include refid="selectOwnerVo"/>
+        WHERE 1=1
+        <if test="ownerNickname != null and ownerNickname != ''">
+            AND owner_nickname LIKE CONCAT('%', #{ownerNickname}, '%')
+        </if>
+        <if test="ownerRealName != null and ownerRealName != ''">
+            AND owner_real_name LIKE CONCAT('%', #{ownerRealName}, '%')
+        </if>
+        <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">
+            AND owner_phone_number LIKE CONCAT('%', #{ownerPhoneNumber}, '%')
+        </if>
+        <if test="ownerStatus != null and ownerStatus != ''">
+            AND owner_status = #{ownerStatus}
+        </if>
+        <if test="ownerType != null and ownerType != ''">
+            AND owner_type = #{ownerType}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectOwnerById" parameterType="Long" resultMap="HjyOwnerResult">
+        <include refid="selectOwnerVo"/>
+        WHERE owner_id = #{ownerId}
+    </select>
+
+    <select id="selectOwnerByPhone" parameterType="String" resultMap="HjyOwnerResult">
+        <include refid="selectOwnerVo"/>
+        WHERE owner_phone_number = #{ownerPhoneNumber}
+    </select>
+
+    <insert id="insertOwner" parameterType="HjyOwner" useGeneratedKeys="true" keyProperty="ownerId">
+        INSERT INTO hjy_owner
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ownerNickname != null and ownerNickname != ''">owner_nickname,</if>
+            <if test="ownerRealName != null and ownerRealName != ''">owner_real_name,</if>
+            <if test="ownerGender != null and ownerGender != ''">owner_gender,</if>
+            <if test="ownerAge != null">owner_age,</if>
+            <if test="ownerIdCard != null and ownerIdCard != ''">owner_id_card,</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number,</if>
+            <if test="ownerOpenId != null and ownerOpenId != ''">owner_open_id,</if>
+            <if test="ownerWechatId != null and ownerWechatId != ''">owner_wechat_id,</if>
+            <if test="ownerQqNumber != null and ownerQqNumber != ''">owner_qq_number,</if>
+            <if test="ownerBirthday != null">owner_birthday,</if>
+            <if test="ownerPortrait != null and ownerPortrait != ''">owner_portrait,</if>
+            <if test="ownerSignature != null and ownerSignature != ''">owner_signature,</if>
+            <if test="ownerStatus != null and ownerStatus != ''">owner_status,</if>
+            <if test="ownerLogonMode != null and ownerLogonMode != ''">owner_logon_mode,</if>
+            <if test="ownerType != null and ownerType != ''">owner_type,</if>
+            <if test="ownerPassword != null and ownerPassword != ''">owner_password,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="ownerNickname != null and ownerNickname != ''">#{ownerNickname},</if>
+            <if test="ownerRealName != null and ownerRealName != ''">#{ownerRealName},</if>
+            <if test="ownerGender != null and ownerGender != ''">#{ownerGender},</if>
+            <if test="ownerAge != null">#{ownerAge},</if>
+            <if test="ownerIdCard != null and ownerIdCard != ''">#{ownerIdCard},</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">#{ownerPhoneNumber},</if>
+            <if test="ownerOpenId != null and ownerOpenId != ''">#{ownerOpenId},</if>
+            <if test="ownerWechatId != null and ownerWechatId != ''">#{ownerWechatId},</if>
+            <if test="ownerQqNumber != null and ownerQqNumber != ''">#{ownerQqNumber},</if>
+            <if test="ownerBirthday != null">#{ownerBirthday},</if>
+            <if test="ownerPortrait != null and ownerPortrait != ''">#{ownerPortrait},</if>
+            <if test="ownerSignature != null and ownerSignature != ''">#{ownerSignature},</if>
+            <if test="ownerStatus != null and ownerStatus != ''">#{ownerStatus},</if>
+            <if test="ownerLogonMode != null and ownerLogonMode != ''">#{ownerLogonMode},</if>
+            <if test="ownerType != null and ownerType != ''">#{ownerType},</if>
+            <if test="ownerPassword != null and ownerPassword != ''">#{ownerPassword},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateOwner" parameterType="HjyOwner">
+        UPDATE hjy_owner
+        <set>
+            <if test="ownerNickname != null and ownerNickname != ''">owner_nickname = #{ownerNickname},</if>
+            <if test="ownerRealName != null and ownerRealName != ''">owner_real_name = #{ownerRealName},</if>
+            <if test="ownerGender != null and ownerGender != ''">owner_gender = #{ownerGender},</if>
+            <if test="ownerAge != null">owner_age = #{ownerAge},</if>
+            <if test="ownerIdCard != null and ownerIdCard != ''">owner_id_card = #{ownerIdCard},</if>
+            <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number = #{ownerPhoneNumber},</if>
+            <if test="ownerOpenId != null and ownerOpenId != ''">owner_open_id = #{ownerOpenId},</if>
+            <if test="ownerWechatId != null and ownerWechatId != ''">owner_wechat_id = #{ownerWechatId},</if>
+            <if test="ownerQqNumber != null and ownerQqNumber != ''">owner_qq_number = #{ownerQqNumber},</if>
+            <if test="ownerBirthday != null">owner_birthday = #{ownerBirthday},</if>
+            <if test="ownerPortrait != null and ownerPortrait != ''">owner_portrait = #{ownerPortrait},</if>
+            <if test="ownerSignature != null and ownerSignature != ''">owner_signature = #{ownerSignature},</if>
+            <if test="ownerStatus != null and ownerStatus != ''">owner_status = #{ownerStatus},</if>
+            <if test="ownerLogonMode != null and ownerLogonMode != ''">owner_logon_mode = #{ownerLogonMode},</if>
+            <if test="ownerType != null and ownerType != ''">owner_type = #{ownerType},</if>
+            <if test="ownerPassword != null and ownerPassword != ''">owner_password = #{ownerPassword},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </set>
+        WHERE owner_id = #{ownerId}
+    </update>
+
+    <delete id="deleteOwnerById" parameterType="Long">
+        DELETE FROM hjy_owner WHERE owner_id = #{ownerId}
+    </delete>
+
+    <delete id="deleteOwnerByIds" parameterType="Long">
+        DELETE FROM hjy_owner WHERE owner_id IN
+        <foreach collection="array" item="ownerId" open="(" separator="," close=")">
+            #{ownerId}
+        </foreach>
+    </delete>
+
+</mapper>
