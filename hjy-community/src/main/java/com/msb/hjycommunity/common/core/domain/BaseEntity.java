@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,7 +29,7 @@ public class BaseEntity implements Serializable {
      * 请求参数
      */
     @TableField(exist = false)
-    private Map<String,Object> params;
+    private Map<String,Object> params = new HashMap<>();
 
     /* 创建者 */
     @TableField(fill = FieldFill.INSERT) //标明该字段在什么时候需要被填充

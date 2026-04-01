@@ -30,6 +30,10 @@ logging:
 spring:
   profiles:
     active: druid
+  # 解决 Spring Boot 2.6+ 与 Swagger 2.9.2 兼容性问题
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
   # redis ??
   redis:
     # ??

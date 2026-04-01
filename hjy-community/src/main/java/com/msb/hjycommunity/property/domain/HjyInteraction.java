@@ -20,24 +20,12 @@ public class HjyInteraction extends BaseEntity {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long communityId;
 
-    /** 业主ID */
+    /** 用户ID */
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Long ownerId;
-
-    /** 业主昵称 */
-    private String ownerNickname;
-
-    /** 业主姓名 */
-    private String ownerRealName;
-
-    /** 业主手机号 */
-    private String ownerPhoneNumber;
+    private Long userId;
 
     /** 内容 */
     private String content;
-
-    /** 图片ID集 */
-    private String filesId;
 
     /** 删除标志 */
     private String delFlag;
@@ -61,36 +49,12 @@ public class HjyInteraction extends BaseEntity {
         this.communityId = communityId;
     }
 
-    public Long getOwnerId() {
-        return ownerId;
+    public Long getUserId() {
+        return userId;
     }
 
-    public void setOwnerId(Long ownerId) {
-        this.ownerId = ownerId;
-    }
-
-    public String getOwnerNickname() {
-        return ownerNickname;
-    }
-
-    public void setOwnerNickname(String ownerNickname) {
-        this.ownerNickname = ownerNickname;
-    }
-
-    public String getOwnerRealName() {
-        return ownerRealName;
-    }
-
-    public void setOwnerRealName(String ownerRealName) {
-        this.ownerRealName = ownerRealName;
-    }
-
-    public String getOwnerPhoneNumber() {
-        return ownerPhoneNumber;
-    }
-
-    public void setOwnerPhoneNumber(String ownerPhoneNumber) {
-        this.ownerPhoneNumber = ownerPhoneNumber;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 
     public String getContent() {
@@ -99,14 +63,6 @@ public class HjyInteraction extends BaseEntity {
 
     public void setContent(String content) {
         this.content = content;
-    }
-
-    public String getFilesId() {
-        return filesId;
-    }
-
-    public void setFilesId(String filesId) {
-        this.filesId = filesId;
     }
 
     public String getDelFlag() {
@@ -130,7 +86,7 @@ public class HjyInteraction extends BaseEntity {
         return "HjyInteraction{" +
                 "interactionId=" + interactionId +
                 ", communityId=" + communityId +
-                ", ownerNickname='" + ownerNickname + '\'' +
+                ", userId=" + userId +
                 ", content='" + content + '\'' +
                 '}';
     }
