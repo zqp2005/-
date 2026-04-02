@@ -1,4 +1,4 @@
-package com.msb.hjycommunity.monitor.controller;
+package com.msb.hjycommunity.web.controller.monitor;
 
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;

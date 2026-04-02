@@ -1,4 +1,4 @@
-package com.msb.hjycommunity.property.controller;
+package com.msb.hjycommunity.web.controller.property;
 
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
