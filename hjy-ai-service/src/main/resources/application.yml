@@ -1,0 +1,79 @@
+# Server Configuration
+server:
+  port: 8090
+
+spring:
+  application:
+    name: hjy-ai-service
+
+  # AI Configuration - 阿里云通义千问
+  ai:
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:sk-04196990e3ba4cfb88a0971e140a2a2d}
+
+  # Redis Configuration
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+      password:
+      database: 0
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 1000
+
+  # Jackson Configuration
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: always
+
+# AI Properties
+hjy:
+  ai:
+    api-key: ${DASHSCOPE_API_KEY:sk-04196990e3ba4cfb88a0971e140a2a2d}
+    base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model: qwen-plus
+    embedding-model: text-embedding-v3
+    temperature: 0.7
+    max-tokens: 2000
+    
+    # 社区配置
+    community:
+      name: 合家云社区
+      address: 智慧小区
+      service-phone: 400-888-8888
+    
+    # 现有系统对接配置
+    hjy-community:
+      base-url: http://localhost:8080
+      # AI服务调用业务接口的管理员账号（需要有相应权限）
+      admin-username: admin
+      admin-password: admin123
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.msb.hjy.ai: DEBUG
+    org.springframework.ai: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
