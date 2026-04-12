@@ -44,6 +44,8 @@ public class DashScopeService {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public String chat(String sessionId, String userMessage, String systemPrompt) {
         try {
+            log.info("调用DashScope API - model: {}, apiKey: {}", chatModel, dashscopeApiKey);
+            
             List<Message> history = sessionHistory.computeIfAbsent(sessionId, k -> new ArrayList<>());
             List<Message> messages = buildMessages(systemPrompt, history, userMessage);
 
@@ -57,6 +59,8 @@ public class DashScopeService {
                     .build();
 
             GenerationResult result = generation.call(param);
+            log.info("API响应: {}", result);
+            
             String response = processResponse(result, messages, history, userMessage, param);
 
             return response != null ? response : "抱歉，暂时无法回复您的问题。";

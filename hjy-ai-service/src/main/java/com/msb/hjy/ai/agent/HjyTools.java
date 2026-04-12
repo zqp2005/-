@@ -76,10 +76,9 @@ public class HjyTools {
                         getParam(params, 2), getParam(params, 3), getParam(params, 4));
                 case "getcomplaintdetail" -> complaintTool.getComplaintDetail(getParam(params, 0));
                 case "querypropertyfee" -> propertyFeeTool.queryPropertyFee(
-                        getParam(params, 0), getParam(params, 1),
-                        getParam(params, 2), getParam(params, 3),
-                        parseInteger(getParam(params, 4)),
-                        parseInteger(getParam(params, 5)));
+                        getParam(params, 0),
+                        parseInteger(getParam(params, 1)),
+                        parseInteger(getParam(params, 2)));
                 case "getpaymentguide" -> propertyFeeTool.getPaymentGuide();
                 case "getpaymenthistory" -> propertyFeeTool.getPaymentHistory(
                         getParam(params, 0), getParam(params, 1), getParam(params, 2));

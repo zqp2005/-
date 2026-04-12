@@ -1,23 +1,25 @@
-package com.msb.hjy.ai.service;
+package com.msb.hjy.ai.service.impl;
 
 import com.msb.hjy.ai.agent.SystemPrompt;
 import com.msb.hjy.ai.config.AiProperties;
 import com.msb.hjy.ai.dto.ChatRequest;
 import com.msb.hjy.ai.dto.ChatResponse;
+import com.msb.hjy.ai.service.ChatService;
+import com.msb.hjy.ai.service.DashScopeService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 public class ChatServiceImpl implements ChatService {
 
-    private final DashScopeService dashScopeService;
-    private final AiProperties aiProperties;
+    @Autowired
+    private DashScopeService dashScopeService;
 
-    public ChatServiceImpl(DashScopeService dashScopeService, AiProperties aiProperties) {
-        this.dashScopeService = dashScopeService;
-        this.aiProperties = aiProperties;
-    }
+    @Value("${hjy.ai.use-chat-client:false}")
+    private boolean useChatClient;
 
     @Override
     public ChatResponse chat(ChatRequest request) {

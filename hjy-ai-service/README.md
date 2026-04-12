@@ -6,8 +6,8 @@
 
 - **Java 17**
 - **Spring Boot 3.2.5**
-- **Spring AI 1.0.0-M6**
-- **Spring AI Alibaba (通义千问)**
+- **Spring AI 1.0.0**
+ - **DeepSeek AI**
 - **Redis** - 会话存储
 - **MySQL** - 知识库存储
 
@@ -74,7 +74,7 @@ hjy-ai-service/
 - JDK 17+
 - Maven 3.8+
 - Redis 6+
-- 阿里云 DashScope API Key
+- DeepSeek API Key
 
 ### 2. 配置
 
@@ -83,8 +83,8 @@ hjy-ai-service/
 ```yaml
 hjy:
   ai:
-    api-key: your-dashscope-api-key
-    model: qwen-plus
+    api-key: your-deepseek-api-key
+    model: deepseek-chat
 ```
 
 ### 3. 启动
@@ -102,7 +102,7 @@ java -jar target/hjy-ai-service-1.0.0.jar
 ```bash
 docker build -t hjy-ai-service .
 docker run -d -p 8090:8090 \
-  -e DASHSCOPE_API_KEY=your-api-key \
+  -e DEEPSEEK_API_KEY=your-api-key \
   hjy-ai-service
 ```
 
@@ -171,7 +171,7 @@ public class AiIntegrationController {
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| hjy.ai.model | AI模型 | qwen-plus |
+| hjy.ai.model | AI模型 | deepseek-chat |
 | hjy.ai.temperature | 温度参数 | 0.7 |
 | hjy.ai.maxTokens | 最大令牌数 | 2000 |
 
@@ -181,7 +181,7 @@ public class AiIntegrationController {
 A: 修改 `application.yml` 中的 `hjy.ai.model` 配置项。
 
 ### Q: 支持哪些AI模型？
-A: 通义千问系列（qwen-plus, qwen-turbo, qwen-max 等）
+A: DeepSeek 系列（deepseek-chat, deepseek-coder 等）
 
 ### Q: 如何接入现有数据库？
 A: 在工具类中调用现有系统的 REST API 或直接操作数据库。

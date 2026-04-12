@@ -28,6 +28,9 @@ public class HjyCommunityClient {
     @Value("${hjy.ai.hjy-community.admin-password:admin123}")
     private String adminPassword;
 
+    @Value("${hjy.ai.hjy-community.api-token:}")
+    private String apiToken;
+
     private String token;
     private long tokenExpireTime;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -35,6 +38,12 @@ public class HjyCommunityClient {
     private static final long TOKEN_VALID_TIME = 25 * 60 * 1000L;
 
     public String getToken() {
+        // 如果配置了固定的api-token，直接返回
+        if (apiToken != null && !apiToken.isEmpty()) {
+            return apiToken;
+        }
+
+        // 否则使用缓存的token
         if (token != null && System.currentTimeMillis() < tokenExpireTime) {
             return token;
         }
@@ -122,6 +131,31 @@ public class HjyCommunityClient {
 
         } catch (Exception e) {
             log.error("POST请求失败: {}, path: {}", e.getMessage(), path);
+            return "{\"code\":500,\"msg\":\"请求失败: " + e.getMessage() + "\"}";
+        }
+    }
+
+    public String put(String path, Map<String, Object> body) {
+        try {
+            String token = getToken();
+            if (token == null) {
+                return "{\"code\":500,\"msg\":\"无法获取认证Token\"}";
+            }
+
+            String url = baseUrl + path;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
+
+            return response.getBody();
+
+        } catch (Exception e) {
+            log.error("PUT请求失败: {}, path: {}", e.getMessage(), path);
             return "{\"code\":500,\"msg\":\"请求失败: " + e.getMessage() + "\"}";
         }
     }

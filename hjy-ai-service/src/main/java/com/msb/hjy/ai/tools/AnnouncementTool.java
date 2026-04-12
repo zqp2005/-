@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msb.hjy.ai.client.HjyCommunityClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -16,49 +18,52 @@ public class AnnouncementTool {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public String queryAnnouncements(String category) {
+    @Tool(description = "查询社区公告列表，可以按类型筛选。用于回答'公告'、'通知'、'社区最新消息'、'有什么通知'等问题")
+    public String queryAnnouncements(
+            @ToolParam(description = "公告类型：notice(通知), announcement(公告), activity(活动), news(新闻)") String category) {
         log.info("查询公告 - category: {}", category);
 
         try {
             String result = communityClient.get("/system/notice/list");
             JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("data");
+            JsonNode data = root.path("rows");
 
-            if (data.isArray() && data.size() > 0) {
-                StringBuilder sb = new StringBuilder("【社区公告列表】\n\n");
+            if (!data.isArray() || data.isEmpty()) {
+                return "当前暂无公告通知。";
+            }
 
-                int count = 0;
-                for (JsonNode item : data) {
-                    if (count >= 10) break;
+            StringBuilder sb = new StringBuilder();
+            int count = 0;
 
-                    String noticeType = item.path("noticeType").asText();
+            for (JsonNode item : data) {
+                if (count >= 10) break;
 
-                    if (category != null && !category.isEmpty() &&
-                            !noticeType.contains(category)) {
-                        continue;
-                    }
+                String noticeType = item.path("noticeType").asText();
 
-                    sb.append("【公告】\n");
-                    sb.append("  标题：").append(item.path("noticeTitle").asText()).append("\n");
-                    sb.append("  类型：").append(formatType(noticeType)).append("\n");
-                    sb.append("  内容：").append(item.path("noticeContent").asText()).append("\n");
-                    sb.append("  发布时间：").append(item.path("createTime").asText()).append("\n");
-                    sb.append("  发布人：").append(item.path("createBy").asText()).append("\n");
-                    sb.append("\n");
-                    count++;
+                if (category != null && !category.isEmpty() && !noticeType.contains(category)) {
+                    continue;
                 }
 
                 if (count == 0) {
-                    sb.append("未找到符合条件的公告\n");
-                } else {
-                    sb.append("共查询到 ").append(count).append(" 条公告\n");
+                    sb.append("【社区公告列表】\n\n");
                 }
 
-                sb.append("\n如需查看公告详情，请告诉我公告标题。");
-                return sb.toString();
-            } else {
-                return "当前暂无公告通知。";
+                sb.append("【公告】\n");
+                sb.append("  标题：").append(item.path("noticeTitle").asText()).append("\n");
+                sb.append("  类型：").append(formatType(noticeType)).append("\n");
+                sb.append("  内容：").append(substring(item.path("noticeContent").asText(), 50)).append("\n");
+                sb.append("  发布时间：").append(item.path("createTime").asText()).append("\n");
+                sb.append("\n");
+                count++;
             }
+
+            if (count == 0) {
+                return "未找到符合条件的公告\n";
+            }
+
+            sb.append("共查询到 ").append(count).append(" 条公告\n");
+            sb.append("\n如需查看公告详情，请告诉我公告标题。");
+            return sb.toString();
 
         } catch (Exception e) {
             log.error("查询公告失败: {}", e.getMessage());
@@ -66,35 +71,39 @@ public class AnnouncementTool {
         }
     }
 
-    public String getAnnouncementDetail(String title) {
+    @Tool(description = "获取公告详情。用于回答查看具体公告内容、'公告详情'、'查看xx通知'等问题")
+    public String getAnnouncementDetail(
+            @ToolParam(description = "公告标题") String title) {
         log.info("查询公告详情 - title: {}", title);
+
+        if (title == null || title.isEmpty()) {
+            return "请提供公告标题。";
+        }
 
         try {
             String result = communityClient.get("/system/notice/list");
             JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("data");
+            JsonNode data = root.path("rows");
 
-            if (data.isArray() && data.size() > 0) {
-                for (JsonNode item : data) {
-                    String noticeTitle = item.path("noticeTitle").asText();
-                    if (title != null && !title.isEmpty() &&
-                            noticeTitle.contains(title)) {
-
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("【公告详情】\n\n");
-                        sb.append("  标题：").append(noticeTitle).append("\n");
-                        sb.append("  类型：").append(formatType(item.path("noticeType").asText())).append("\n");
-                        sb.append("  内容：\n").append(item.path("noticeContent").asText()).append("\n\n");
-                        sb.append("  发布时间：").append(item.path("createTime").asText()).append("\n");
-                        sb.append("  发布人：").append(item.path("createBy").asText()).append("\n");
-
-                        return sb.toString();
-                    }
-                }
-                return "未找到该公告，请检查标题是否正确。";
-            } else {
+            if (!data.isArray() || data.isEmpty()) {
                 return "当前暂无公告通知。";
             }
+
+            for (JsonNode item : data) {
+                String noticeTitle = item.path("noticeTitle").asText();
+                if (noticeTitle.contains(title)) {
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("【公告详情】\n\n");
+                    sb.append("  标题：").append(noticeTitle).append("\n");
+                    sb.append("  类型：").append(formatType(item.path("noticeType").asText())).append("\n");
+                    sb.append("  内容：\n").append(item.path("noticeContent").asText()).append("\n\n");
+                    sb.append("  发布时间：").append(item.path("createTime").asText()).append("\n");
+                    sb.append("  发布人：").append(item.path("createBy").asText()).append("\n");
+
+                    return sb.toString();
+                }
+            }
+            return "未找到该公告，请检查标题是否正确。";
 
         } catch (Exception e) {
             log.error("查询公告详情失败: {}", e.getMessage());
@@ -102,53 +111,67 @@ public class AnnouncementTool {
         }
     }
 
-    public String getActivities(String status) {
+    @Tool(description = "查询社区活动。用于回答'有什么活动'、'社区活动'、'有什么有趣的活动'等问题")
+    public String getActivities(
+            @ToolParam(description = "活动状态：upcoming(即将开始), ongoing(进行中), ended(已结束)") String status) {
         log.info("查询社区活动 - status: {}", status);
 
         try {
             String result = communityClient.get("/system/notice/list");
             JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("data");
+            JsonNode data = root.path("rows");
 
-            if (data.isArray() && data.size() > 0) {
-                StringBuilder sb = new StringBuilder("【社区活动列表】\n\n");
-
-                int count = 0;
-                for (JsonNode item : data) {
-                    if (count >= 5) break;
-
-                    String noticeType = item.path("noticeType").asText();
-                    if ("activity".equalsIgnoreCase(noticeType) || "活动".equals(noticeType)) {
-                        sb.append("【活动】\n");
-                        sb.append("  标题：").append(item.path("noticeTitle").asText()).append("\n");
-                        sb.append("  内容：").append(item.path("noticeContent").asText()).append("\n");
-                        sb.append("  发布时间：").append(item.path("createTime").asText()).append("\n");
-                        sb.append("\n");
-                        count++;
-                    }
-                }
-
-                if (count == 0) {
-                    sb.append("当前暂无社区活动通知\n");
-                    sb.append("\n【其他通知】\n");
-                    int otherCount = 0;
-                    for (JsonNode item : data) {
-                        if (otherCount >= 3) break;
-                        sb.append("  - ").append(item.path("noticeTitle").asText()).append("\n");
-                        otherCount++;
-                    }
-                }
-
-                return sb.toString();
-            } else {
-                return "当前暂无社区活动通知。\n" +
-                       "敬请期待即将到来的社区活动！";
+            if (!data.isArray() || data.isEmpty()) {
+                return getDefaultActivities();
             }
+
+            StringBuilder sb = new StringBuilder();
+            int count = 0;
+
+            for (JsonNode item : data) {
+                if (count >= 5) break;
+
+                String noticeType = item.path("noticeType").asText();
+                if ("activity".equalsIgnoreCase(noticeType) || "活动".equals(noticeType)) {
+                    if (count == 0) {
+                        sb.append("【社区活动列表】\n\n");
+                    }
+
+                    sb.append("【活动】\n");
+                    sb.append("  标题：").append(item.path("noticeTitle").asText()).append("\n");
+                    sb.append("  内容：").append(substring(item.path("noticeContent").asText(), 50)).append("\n");
+                    sb.append("  发布时间：").append(item.path("createTime").asText()).append("\n");
+                    sb.append("\n");
+                    count++;
+                }
+            }
+
+            if (count == 0) {
+                return getDefaultActivities();
+            }
+
+            return sb.toString();
 
         } catch (Exception e) {
             log.error("查询活动失败: {}", e.getMessage());
-            return "查询社区活动失败，请稍后重试。";
+            return getDefaultActivities();
         }
+    }
+
+    private String getDefaultActivities() {
+        return """
+                【社区活动列表】
+
+                您好！社区活动查询功能正在建设中。
+
+                我们将在近期推出丰富多彩的社区活动，包括：
+                - 健康讲座
+                - 亲子活动
+                - 节日庆典
+                - 兴趣班课程
+
+                敬��期待！如需了解最新活动信息，请关注社区公告。
+                """;
     }
 
     private String formatType(String type) {
@@ -160,5 +183,12 @@ public class AnnouncementTool {
             case "news" -> "新闻";
             default -> type;
         };
+    }
+
+    private String substring(String str, int maxLength) {
+        if (str == null || str.length() <= maxLength) {
+            return str;
+        }
+        return str.substring(0, maxLength) + "...";
     }
 }

@@ -10,17 +10,11 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class AiConfig {
 
-    @Value("${hjy.ai.api-key}")
+    @Value("${spring.ai.deepseek.api-key}")
     private String apiKey;
 
-    @Value("${hjy.ai.model:qwen-plus}")
+    @Value("${spring.ai.deepseek.chat.options.model:deepseek-chat}")
     private String model;
-
-    @Value("${hjy.ai.temperature:0.7}")
-    private Double temperature;
-
-    @Value("${hjy.ai.max-tokens:2000}")
-    private Integer maxTokens;
 
     @Bean
     public RestTemplate restTemplate() {
