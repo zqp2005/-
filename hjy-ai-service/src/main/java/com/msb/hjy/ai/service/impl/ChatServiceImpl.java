@@ -1,25 +1,22 @@
 package com.msb.hjy.ai.service.impl;
 
 import com.msb.hjy.ai.agent.SystemPrompt;
-import com.msb.hjy.ai.config.AiProperties;
 import com.msb.hjy.ai.dto.ChatRequest;
 import com.msb.hjy.ai.dto.ChatResponse;
 import com.msb.hjy.ai.service.ChatService;
-import com.msb.hjy.ai.service.DashScopeService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
 public class ChatServiceImpl implements ChatService {
 
-    @Autowired
-    private DashScopeService dashScopeService;
+    private final ChatClient chatClient;
 
-    @Value("${hjy.ai.use-chat-client:false}")
-    private boolean useChatClient;
+    public ChatServiceImpl(ChatClient chatClient) {
+        this.chatClient = chatClient;
+    }
 
     @Override
     public ChatResponse chat(ChatRequest request) {
@@ -32,14 +29,12 @@ public class ChatServiceImpl implements ChatService {
             log.info("处理聊天请求 - sessionId: {}, agentType: {}, message: {}",
                     request.getSessionId(), agentType, request.getMessage());
 
-            String systemPrompt = getSystemPrompt(agentType);
             String userMessage = buildUserMessage(request);
-
-            String response = dashScopeService.chat(
-                    request.getSessionId(),
-                    userMessage,
-                    systemPrompt
-            );
+            
+            String response = chatClient.prompt()
+                    .user(userMessage)
+                    .call()
+                    .content();
 
             log.info("AI响应 - sessionId: {}, response: {}", request.getSessionId(), response);
 
@@ -53,17 +48,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     public void clearSession(String sessionId) {
-        dashScopeService.clearSession(sessionId);
         log.info("清除会话历史 - sessionId: {}", sessionId);
-    }
-
-    private String getSystemPrompt(String agentType) {
-        return switch (agentType) {
-            case "property" -> SystemPrompt.PROPERTY_ASSISTANT;
-            case "customer_service" -> SystemPrompt.CUSTOMER_SERVICE;
-            case "data_analysis" -> SystemPrompt.DATA_ANALYSIS;
-            default -> SystemPrompt.CUSTOMER_SERVICE;
-        };
     }
 
     private String buildUserMessage(ChatRequest request) {

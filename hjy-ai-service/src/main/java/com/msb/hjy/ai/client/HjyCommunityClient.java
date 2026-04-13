@@ -49,13 +49,11 @@ public class HjyCommunityClient {
         }
 
         try {
-            String url = baseUrl + "/login";
+            String url = baseUrl + "/aiLogin";
             
             Map<String, Object> loginBody = new HashMap<>();
             loginBody.put("username", adminUsername);
             loginBody.put("password", adminPassword);
-            loginBody.put("code", "");
-            loginBody.put("uuid", "");
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);

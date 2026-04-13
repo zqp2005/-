@@ -60,7 +60,7 @@ hjy:
       base-url: http://localhost:8080
       admin-username: admin
       admin-password: admin123
-      api-token: eyJhbGciOiJIUzI1NiJ9.eyJsb2dpbl91c2VyX2tleSI6ImQ2NzQ2MDhlLWFlOTctNGFhMi04YTU0LThjMDliNzZhNGFmYiJ9.YJeRU3Q_AZ58_gOk72dO18CB6lrHC7SLTXwPP_qvpKU
+      api-token:
 
 # Logging Configuration
 logging:

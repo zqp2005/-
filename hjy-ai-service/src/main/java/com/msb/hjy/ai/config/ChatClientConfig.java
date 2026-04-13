@@ -2,6 +2,9 @@ package com.msb.hjy.ai.config;
 
 import com.msb.hjy.ai.tools.*;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,8 +34,16 @@ public class ChatClientConfig {
     }
 
     @Bean
-    public ChatClient chatClient(ChatModel chatModel) {
+    public ChatMemory chatMemory() {
+        return MessageWindowChatMemory.builder()
+                .maxMessages(20)
+                .build();
+    }
+
+    @Bean
+    public ChatClient chatClient(ChatModel chatModel, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
+                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .defaultSystem("""
                         你是合家云社区的AI物业客服助手"小合"。
 
@@ -65,7 +76,7 @@ public class ChatClientConfig {
                         - 用户: 有什么新公告？
                           你: 立即调用 queryAnnouncements(category="")
 
-                        - 用户: 查一下物业���
+                        - 用户: 查一下物业费
                           你: 立即调用 queryPropertyFee(ownerName="", year=null, month=null)
 
                         - 用户: 怎么缴费？
