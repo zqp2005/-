@@ -52,6 +52,21 @@ public class SysLoginController {
      * @param loginBody
      * @return: com.msb.hjycommunity.common.utils.ChainedMap
      */
+    /**
+     * AI服务登录（无需验证码）
+     */
+    @PostMapping("/aiLogin")
+    public ChainedMap aiLogin(@RequestBody LoginBody loginBody){
+        String token = loginService.aiLogin(loginBody.getUsername(), loginBody.getPassword());
+        if (token == null || token.isEmpty()) {
+            return ChainedMap.create().set("code", 401).set("msg", "用户名或密码错误");
+        }
+        return ChainedMap.create().set("token",token);
+    }
+
+    /**
+     * 原登录方法（需要验证码）
+     */
     @PostMapping("/login")
     public ChainedMap login(@RequestBody LoginBody loginBody){
 

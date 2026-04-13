@@ -64,4 +64,20 @@ public class SysLoginServiceImpl implements SysLoginService {
 
         return tokenService.createToken(loginUser);
     }
+
+    /**
+     * AI服务登录（无需验证码）
+     */
+    @Override
+    public String aiLogin(String username, String password) {
+        Authentication authentication = null;
+        try{
+            authentication = authenticationManager.
+                    authenticate(new UsernamePasswordAuthenticationToken(username,password));
+        }catch (Exception e){
+            return null;
+        }
+        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        return tokenService.createToken(loginUser);
+    }
 }
