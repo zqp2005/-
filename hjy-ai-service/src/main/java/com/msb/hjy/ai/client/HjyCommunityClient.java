@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,19 +26,19 @@ public class HjyCommunityClient {
     @Value("${hjy.ai.hjy-community.admin-username:admin}")
     private String adminUsername;
 
-    @Value("${hjy.ai.hjy-community.admin-password:admin123}")
+    @Value("${hjy.ai.hjy-community.admin-password:}")
     private String adminPassword;
 
     @Value("${hjy.ai.hjy-community.api-token:}")
     private String apiToken;
 
-    private String token;
-    private long tokenExpireTime;
+    private volatile String token;
+    private volatile long tokenExpireTime;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final long TOKEN_VALID_TIME = 25 * 60 * 1000L;
 
-    public String getToken() {
+    public synchronized String getToken() {
         // 如果配置了固定的api-token，直接返回
         if (apiToken != null && !apiToken.isEmpty()) {
             return apiToken;
@@ -50,7 +51,7 @@ public class HjyCommunityClient {
 
         try {
             String url = baseUrl + "/aiLogin";
-            
+
             Map<String, Object> loginBody = new HashMap<>();
             loginBody.put("username", adminUsername);
             loginBody.put("password", adminPassword);
@@ -83,14 +84,16 @@ public class HjyCommunityClient {
         try {
             String token = getToken();
             if (token == null) {
-                return "{\"code\":500,\"msg\":\"无法获取认证Token\"}";
+                return buildErrorJson(500, "无法获取认证Token");
             }
 
-            String url = baseUrl + path;
-            if (!params.isEmpty()) {
-                StringBuilder sb = new StringBuilder(url).append("?");
-                params.forEach((k, v) -> sb.append(k).append("=").append(v).append("&"));
-                url = sb.toString();
+            String url;
+            if (params.isEmpty()) {
+                url = baseUrl + path;
+            } else {
+                UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(baseUrl + path);
+                params.forEach((k, v) -> builder.queryParam(k, v));
+                url = builder.toUriString();
             }
 
             HttpHeaders headers = new HttpHeaders();
@@ -103,8 +106,8 @@ public class HjyCommunityClient {
             return response.getBody();
 
         } catch (Exception e) {
-            log.error("GET请求失败: {}, path: {}", e.getMessage(), path);
-            return "{\"code\":500,\"msg\":\"请求失败: " + e.getMessage() + "\"}";
+            log.error("GET请求失败: path: {}, error: {}", path, e.getMessage());
+            return buildErrorJson(500, "请求失败，请稍后重试");
         }
     }
 
@@ -112,7 +115,7 @@ public class HjyCommunityClient {
         try {
             String token = getToken();
             if (token == null) {
-                return "{\"code\":500,\"msg\":\"无法获取认证Token\"}";
+                return buildErrorJson(500, "无法获取认证Token");
             }
 
             String url = baseUrl + path;
@@ -128,8 +131,8 @@ public class HjyCommunityClient {
             return response.getBody();
 
         } catch (Exception e) {
-            log.error("POST请求失败: {}, path: {}", e.getMessage(), path);
-            return "{\"code\":500,\"msg\":\"请求失败: " + e.getMessage() + "\"}";
+            log.error("POST请求失败: path: {}, error: {}", path, e.getMessage());
+            return buildErrorJson(500, "请求失败，请稍后重试");
         }
     }
 
@@ -137,7 +140,7 @@ public class HjyCommunityClient {
         try {
             String token = getToken();
             if (token == null) {
-                return "{\"code\":500,\"msg\":\"无法获取认证Token\"}";
+                return buildErrorJson(500, "无法获取认证Token");
             }
 
             String url = baseUrl + path;
@@ -153,8 +156,19 @@ public class HjyCommunityClient {
             return response.getBody();
 
         } catch (Exception e) {
-            log.error("PUT请求失败: {}, path: {}", e.getMessage(), path);
-            return "{\"code\":500,\"msg\":\"请求失败: " + e.getMessage() + "\"}";
+            log.error("PUT请求失败: path: {}, error: {}", path, e.getMessage());
+            return buildErrorJson(500, "请求失败，请稍后重试");
+        }
+    }
+
+    private String buildErrorJson(int code, String message) {
+        try {
+            Map<String, Object> error = new HashMap<>();
+            error.put("code", code);
+            error.put("msg", message);
+            return objectMapper.writeValueAsString(error);
+        } catch (Exception e) {
+            return "{\"code\":500,\"msg\":\"请求失败\"}";
         }
     }
 }

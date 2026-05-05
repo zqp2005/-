@@ -6,6 +6,7 @@ import com.msb.hjy.ai.prompt.PromptTemplate;
 import com.msb.hjy.ai.service.ChatService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -15,11 +16,13 @@ import java.util.Set;
 public class ChatServiceImpl implements ChatService {
 
     private final ChatClient chatClient;
+    private final ChatMemory chatMemory;
     private final PromptTemplate promptTemplate;
     private static final Set<String> GREETING_KEYWORDS = Set.of("你好", "hi", "hello", "在吗", "您好", "嗨", "hey");
 
-    public ChatServiceImpl(ChatClient chatClient, PromptTemplate promptTemplate) {
+    public ChatServiceImpl(ChatClient chatClient, ChatMemory chatMemory, PromptTemplate promptTemplate) {
         this.chatClient = chatClient;
+        this.chatMemory = chatMemory;
         this.promptTemplate = promptTemplate;
     }
 
@@ -49,9 +52,10 @@ public class ChatServiceImpl implements ChatService {
             }
 
             String userMessage = buildUserMessage(request);
-            
+
             String response = chatClient.prompt()
                     .user(userMessage)
+                    .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.getSessionId()))
                     .call()
                     .content();
 
@@ -61,12 +65,13 @@ public class ChatServiceImpl implements ChatService {
 
         } catch (Exception e) {
             log.error("聊天处理异常 - sessionId: {}, error: {}", request.getSessionId(), e.getMessage(), e);
-            return ChatResponse.error(request.getSessionId(), "AI服务暂时无法响应: " + e.getMessage());
+            return ChatResponse.error(request.getSessionId(), "AI服务暂时无法响应，请稍后重试。");
         }
     }
 
     @Override
     public void clearSession(String sessionId) {
+        chatMemory.clear(sessionId);
         log.info("清除会话历史 - sessionId: {}", sessionId);
     }
 

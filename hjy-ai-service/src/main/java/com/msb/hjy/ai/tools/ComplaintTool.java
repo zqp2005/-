@@ -182,27 +182,46 @@ public class ComplaintTool {
             return "请提供有效评分（1-5分）。";
         }
 
-        String ratingText = switch (rating) {
-            case 1 -> "非常不满意";
-            case 2 -> "不满意";
-            case 3 -> "一般";
-            case 4 -> "满意";
-            case 5 -> "非常满意";
-            default -> "未评价";
-        };
+        try {
+            java.util.Map<String, Object> body = new java.util.HashMap<>();
+            body.put("complaintSuggestId", complaintId);
+            body.put("suggestState", "Rated");
+            body.put("scoreNumber", rating);
+            body.put("scoreContent", comment != null ? comment : "");
 
-        return String.format("""
-                【投诉评价成功】
+            String result = communityClient.put("/system/suggest", body);
+            JsonNode root = objectMapper.readTree(result);
 
-                【评价信息】
-                投诉编号：%s
-                评分：%d分（%s）
-                评价内容：%s
+            if (root.path("code").asInt() == 200) {
+                String ratingText = switch (rating) {
+                    case 1 -> "非常不满意";
+                    case 2 -> "不满意";
+                    case 3 -> "一般";
+                    case 4 -> "满意";
+                    case 5 -> "非常满意";
+                    default -> "未评价";
+                };
 
-                感谢您的宝贵意见！
-                我们将继续改进服务质量。
-                """, complaintId, rating, ratingText, 
-                comment != null ? comment : "未填写");
+                return String.format("""
+                        【投诉评价成功】
+
+                        【评价信息】
+                        投诉编号：%s
+                        评分：%d分（%s）
+                        评价内容：%s
+
+                        感谢您的宝贵意见！
+                        我们将继续改进服务质量。
+                        """, complaintId, rating, ratingText,
+                        comment != null ? comment : "未填写");
+            } else {
+                return "投诉评价失败：" + root.path("msg").asText();
+            }
+
+        } catch (Exception e) {
+            log.error("评价投诉失败: {}", e.getMessage());
+            return "投诉评价失败，请稍后重试。";
+        }
     }
 
     private String formatType(String type) {

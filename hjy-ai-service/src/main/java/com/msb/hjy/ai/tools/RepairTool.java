@@ -76,7 +76,7 @@ public class RepairTool {
 
         } catch (Exception e) {
             log.error("查询报修工单失败: {}", e.getMessage());
-            return "查询报修工单失败，请稍后重试。错误信息: " + e.getMessage();
+            return "查询报修工单失败，请稍后重试。";
         }
     }
 
@@ -222,27 +222,46 @@ public class RepairTool {
             return "请提供有效评分（1-5分）。";
         }
 
-        String ratingText = switch (rating) {
-            case 1 -> "非常不满意";
-            case 2 -> "不满意";
-            case 3 -> "一般";
-            case 4 -> "满意";
-            case 5 -> "非常满意";
-            default -> "未评价";
-        };
+        try {
+            Map<String, Object> body = new HashMap<>();
+            body.put("repairId", repairId);
+            body.put("repairState", "Rated");
+            body.put("scoreNumber", rating);
+            body.put("scoreContent", comment != null ? comment : "");
 
-        return String.format("""
-                【报修评价成功】
+            String result = communityClient.put("/system/repair", body);
+            JsonNode root = objectMapper.readTree(result);
 
-                【评价信息】
-                工单号：%s
-                评分：%d分（%s）
-                评价内容：%s
+            if (root.path("code").asInt() == 200) {
+                String ratingText = switch (rating) {
+                    case 1 -> "非常不满意";
+                    case 2 -> "不满意";
+                    case 3 -> "一般";
+                    case 4 -> "满意";
+                    case 5 -> "非常满意";
+                    default -> "未评价";
+                };
 
-                感谢您的宝贵意见！
-                我们将��续��进服务质量。
-                """, repairId, rating, ratingText, 
-                comment != null ? comment : "未填写");
+                return String.format("""
+                        【报修评价成功】
+
+                        【评价信息】
+                        工单号：%s
+                        评分：%d分（%s）
+                        评价内容：%s
+
+                        感谢您的宝贵意见！
+                        我们将继续改进服务质量。
+                        """, repairId, rating, ratingText,
+                        comment != null ? comment : "未填写");
+            } else {
+                return "报修评价失败：" + root.path("msg").asText();
+            }
+
+        } catch (Exception e) {
+            log.error("评价报修失败: {}", e.getMessage());
+            return "评价报修失败，请稍后重试。";
+        }
     }
 
     private String formatState(String state) {

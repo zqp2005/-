@@ -73,7 +73,7 @@ public class OwnerInfoTool {
 
         } catch (Exception e) {
             log.error("查询业主信息失败: {}", e.getMessage());
-            return "查询业主信息失败，请稍后重试。错误信息: " + e.getMessage();
+            return "查询业主信息失败，请稍后重试。";
         }
     }
 

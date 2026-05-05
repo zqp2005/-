@@ -3,7 +3,8 @@ package com.msb.hjy.ai.controller;
 import com.msb.hjy.ai.common.result.Result;
 import com.msb.hjy.ai.dto.ChatRequest;
 import com.msb.hjy.ai.dto.ChatResponse;
-import com.msb.hjy.ai.tools.RepairTool;
+import com.msb.hjy.ai.service.ChatService;
+import com.msb.hjy.ai.tools.*;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -19,17 +20,32 @@ public class ChatController {
 
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
+    private final ChatService chatService;
     private final RepairTool repairTool;
+    private final ComplaintTool complaintTool;
+    private final PropertyFeeTool propertyFeeTool;
+    private final OwnerInfoTool ownerInfoTool;
+    private final AnnouncementTool announcementTool;
+    private final CommunityTool communityTool;
 
-    public ChatController(ChatClient chatClient, ChatMemory chatMemory, RepairTool repairTool) {
+    public ChatController(ChatClient chatClient, ChatMemory chatMemory, ChatService chatService,
+                          RepairTool repairTool, ComplaintTool complaintTool,
+                          PropertyFeeTool propertyFeeTool, OwnerInfoTool ownerInfoTool,
+                          AnnouncementTool announcementTool, CommunityTool communityTool) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
+        this.chatService = chatService;
         this.repairTool = repairTool;
+        this.complaintTool = complaintTool;
+        this.propertyFeeTool = propertyFeeTool;
+        this.ownerInfoTool = ownerInfoTool;
+        this.announcementTool = announcementTool;
+        this.communityTool = communityTool;
     }
 
     @PostMapping("/chat")
     public Result<ChatResponse> chat(@Valid @RequestBody ChatRequest request) {
-        log.info("收到聊天请求 - sessionId: {}, message: {}", 
+        log.info("收到聊天请求 - sessionId: {}, message: {}",
                 request.getSessionId(), request.getMessage());
 
         try {
@@ -48,28 +64,31 @@ public class ChatController {
             return Result.success("对话成功", chatResponse);
         } catch (Exception e) {
             log.error("AI对话失败: {}", e.getMessage(), e);
-            return Result.error("AI服务异常: " + e.getMessage());
+            return Result.error("AI服务暂时无法响应，请稍后重试。");
         }
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatStream(@RequestBody ChatRequest request) {
-        log.info("收到流式聊天请求 - sessionId: {}, message: {}", 
+    public Flux<String> chatStream(@Valid @RequestBody ChatRequest request) {
+        log.info("收到流式聊天请求 - sessionId: {}, message: {}",
                 request.getSessionId(), request.getMessage());
-        
+
         return chatClient.prompt()
                 .user(request.getMessage())
                 .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.getSessionId()))
-                .tools(repairTool)
+                .tools(repairTool, complaintTool, propertyFeeTool, ownerInfoTool, announcementTool, communityTool)
                 .stream()
                 .content()
-                .map(content -> "data: " + content + "\n\n");
+                .map(content -> "data: " + content + "\n\n")
+                .onErrorResume(e -> {
+                    log.error("流式对话异常: {}", e.getMessage(), e);
+                    return Flux.just("data: AI服务暂时无法响应，请稍后重试。\n\n");
+                });
     }
 
     @DeleteMapping("/session/{sessionId}")
     public Result<Void> clearSession(@PathVariable String sessionId) {
-        chatMemory.clear(sessionId);
-        log.info("清除会话历史 - sessionId: {}", sessionId);
+        chatService.clearSession(sessionId);
         return Result.success("会话已清除", null);
     }
 

@@ -67,7 +67,7 @@ public class AnnouncementTool {
 
         } catch (Exception e) {
             log.error("查询公告失败: {}", e.getMessage());
-            return "查询公告失败，请稍后重试。错误信息: " + e.getMessage();
+            return "查询公告失败，请稍后重试。";
         }
     }
 
@@ -170,7 +170,7 @@ public class AnnouncementTool {
                 - 节日庆典
                 - 兴趣班课程
 
-                敬��期待！如需了解最新活动信息，请关注社区公告。
+                敬请期待！如需了解最新活动信息，请关注社区公告。
                 """;
     }
 
