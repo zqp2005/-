@@ -9,6 +9,12 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Spring AI ChatClient 配置类
+ * <p>
+ * 配置 ChatClient Bean，注入六大物业工具（@Tool 注解），
+ * 设置系统提示词（强制调用规则），并配置消息窗口记忆（最近20条）。
+ */
 @Configuration
 public class ChatClientConfig {
 
@@ -19,6 +25,9 @@ public class ChatClientConfig {
     private final AnnouncementTool announcementTool;
     private final CommunityTool communityTool;
 
+    /**
+     * 构造注入六大工具
+     */
     public ChatClientConfig(RepairTool repairTool,
                           ComplaintTool complaintTool,
                           PropertyFeeTool propertyFeeTool,
@@ -33,6 +42,9 @@ public class ChatClientConfig {
         this.communityTool = communityTool;
     }
 
+    /**
+     * 消息窗口记忆 Bean：保存最近 20 条对话消息作为上下文
+     */
     @Bean
     public ChatMemory chatMemory() {
         return MessageWindowChatMemory.builder()
@@ -40,6 +52,12 @@ public class ChatClientConfig {
                 .build();
     }
 
+    /**
+     * 创建 ChatClient Bean，注入默认系统提示词和六大工具
+     * <p>
+     * 系统提示词强制 AI 在收到物业相关问题时必须立即调用工具获取真实数据，
+     * 避免大模型凭空编造答案。
+     */
     @Bean
     public ChatClient chatClient(ChatModel chatModel, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
@@ -71,16 +89,16 @@ public class ChatClientConfig {
 
                         【调用示例】
                         - 用户: 查一下报修进度
-                          你: 立即调用 queryRepairOrders(status="", ownerName="")
+                           你: 立即调用 queryRepairOrders(status="", ownerName="")
 
                         - 用户: 有什么新公告？
-                          你: 立即调用 queryAnnouncements(category="")
+                           你: 立即调用 queryAnnouncements(category="")
 
                         - 用户: 查一下物业费
-                          你: 立即调用 queryPropertyFee(ownerName="", year=null, month=null)
+                           你: 立即调用 queryPropertyFee(ownerName="", year=null, month=null)
 
                         - 用户: 怎么缴费？
-                          你: 立即调用 getPaymentGuide()
+                           你: 立即调用 getPaymentGuide()
 
                         【重要】
                         - 工具参数可以传空字符串或null，工具会返回所有数据或默认数据

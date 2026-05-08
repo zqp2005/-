@@ -1,82 +1,82 @@
-# Server Configuration
+# 服务端口配置
 server:
-  port: 8090
+  port: 8090  # AI 服务运行端口，前端通过 /ai 代理访问
 
 spring:
   application:
-    name: hjy-ai-service
+    name: hjy-ai-service  # 应用名称，用于服务注册与发现
 
-  # Spring AI DeepSeek
+  # Spring AI DeepSeek 模型配置
   ai:
     deepseek:
-      api-key: ${DEEPSEEK_API_KEY}
-      base-url: https://api.deepseek.com
-      connection-timeout: 60
-      read-timeout: 120
+      api-key: ${DEEPSEEK_API_KEY}      # DeepSeek API 密钥，从环境变量读取
+      base-url: https://api.deepseek.com  # DeepSeek API 地址
+      connection-timeout: 60              # 连接超时时间（秒）
+      read-timeout: 120                   # 读取超时时间（秒）
       chat:
         options:
           model: deepseek-chat
-          temperature: 0.7
+          temperature: 0.7  # 生成温度，值越大输出越随机
 
-  # Redis Configuration
+  # Redis 配置
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
-      password:
-      database: 0
-      timeout: 3000
+      host: 127.0.0.1   # Redis 服务器地址
+      port: 6379        # Redis 服务器端口号
+      password:         # Redis 密码（无密码则为空）
+      database: 0       # 使用的 Redis 数据库编号
+      timeout: 3000     # 连接超时时间（毫秒）
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: 1000
+          max-active: 8  # 连接池最大活跃连接数
+          max-idle: 8    # 连接池最大空闲连接数
+          min-idle: 0    # 连接池最小空闲连接数
+          max-wait: 1000 # 获取连接的最大等待时间（毫秒）
 
-  # Jackson Configuration
+  # Jackson JSON 序列化配置
   jackson:
-    date-format: yyyy-MM-dd HH:mm:ss
-    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss  # 日期格式化格式
+    time-zone: GMT+8                   # 时区设置为北京时间
     serialization:
-      write-dates-as-timestamps: false
+      write-dates-as-timestamps: false # 是否将日期写为时间戳（false 表示使用格式化字符串）
     deserialization:
-      fail-on-unknown-properties: false
-    default-property-inclusion: always
+      fail-on-unknown-properties: false  # 反序列化时遇到未知属性是否抛出异常
+    default-property-inclusion: always   # 序列化时默认包含所有属性
 
-# AI Properties
+# 自定义 AI 属性配置
 hjy:
   ai:
-    api-key: ${DEEPSEEK_API_KEY}
-    model: deepseek-chat
+    api-key: ${DEEPSEEK_API_KEY}  # AI 模型 API 密钥
+    model: deepseek-chat          # 使用的 AI 模型名称
 
-    # 社区配置
+    # 社区基本信息配置
     community:
       name: 合家云社区
       address: 智慧小区
-      service-phone: 400-888-8888
+      service-phone: 400-888-8888  # 物业服务热线电话
 
-    # 现有系统对接配置
+    # hjy-community 后端对接配置
     hjy-community:
-      base-url: http://localhost:8080
-      admin-username: ${HJY_COMMUNITY_ADMIN_USER:admin}
-      admin-password: ${HJY_COMMUNITY_ADMIN_PASSWORD:admin123}
-      api-token: ${HJY_COMMUNITY_API_TOKEN:}
+      base-url: http://localhost:8080                                      # hjy-community 后端地址
+      admin-username: ${HJY_COMMUNITY_ADMIN_USER:admin}                    # 管理员用户名（默认 admin）
+      admin-password: ${HJY_COMMUNITY_ADMIN_PASSWORD:admin123}            # 管理员密码（默认 admin123）
+      api-token: ${HJY_COMMUNITY_API_TOKEN:}                               # 自定义 API Token（可选）
 
-# Logging Configuration
+# 日志配置
 logging:
   level:
-    root: INFO
-    com.msb.hjy.ai: DEBUG
-    org.springframework.ai: DEBUG
+    root: INFO                 # 全局日志级别
+    com.msb.hjy.ai: DEBUG      # 项目包日志级别为 DEBUG，便于调试
+    org.springframework.ai: DEBUG  # Spring AI 框架日志级别
   pattern:
-    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'  # 控制台日志输出格式
 
-# Management Endpoints
+# Actuator 监控端点配置
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics  # 暴露的监控端点：健康检查、应用信息、指标
   endpoint:
     health:
-      show-details: always
+      show-details: always  # 健康检查时总是显示详细信息

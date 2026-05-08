@@ -9,15 +9,30 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * 投诉建议工具 - AI 可调用的投诉相关函数
+ * <p>
+ * 提供投诉建议的列表查询、提交、详情查看和评价功能。
+ * 通过 @Tool 注解注册为 Spring AI Function Calling 的工具。
+ */
 @Slf4j
 @Component
 public class ComplaintTool {
 
+    /** 社区后端 HTTP 客户端 */
     @Autowired
     private HjyCommunityClient communityClient;
 
+    /** JSON 解析器 */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 查询投诉建议列表
+     *
+     * @param status 状态筛选（pending/processing/resolved/closed）
+     * @param type   类型筛选（service/sanitation/facility/noise/other）
+     * @return 格式化的投诉列表文本
+     */
     @Tool(description = "查询投诉建议列表，可以按状态或类型筛选。用于回答'投诉进度'、'我的建议'、'有哪些投诉'等问题")
     public String queryComplaints(
             @ToolParam(description = "状态筛选：pending(待处理), processing(处理中), resolved(已解决), closed(已关闭)") String status,
@@ -76,7 +91,17 @@ public class ComplaintTool {
         }
     }
 
-    @Tool(description = "提交投诉建议。用于回答'我要投诉'、'提建议'、'反馈问题'等问题，需要投诉���信息、类型和内容")
+    /**
+     * 提交投诉建议
+     *
+     * @param ownerName 投诉人姓名（必填）
+     * @param phone     联系电话
+     * @param type      投诉类型（必填）
+     * @param content   投诉内容（必填）
+     * @param location  投诉地点
+     * @return 提交结果文本
+     */
+    @Tool(description = "提交投诉建议。用于回答'我要投诉'、'提建议'、'反馈问题'等问题，需要投诉人信息、类型和内容")
     public String submitComplaint(
             @ToolParam(description = "投诉人姓名，必填") String ownerName,
             @ToolParam(description = "联系电话") String phone,
@@ -131,13 +156,19 @@ public class ComplaintTool {
         }
     }
 
+    /**
+     * 获取投诉建议详情
+     *
+     * @param complaintId 投诉建议编号
+     * @return 格式化的详情文本
+     */
     @Tool(description = "获取投诉建议详情。用于回答'投诉详情'、'建议详情'、'我的投诉xxx'等问题")
     public String getComplaintDetail(
             @ToolParam(description = "投诉建议编号") String complaintId) {
         log.info("查询投诉详情 - complaintId: {}", complaintId);
 
         if (complaintId == null || complaintId.isEmpty()) {
-            return "请提供投��建议编号。";
+            return "请提供投诉建议编号。";
         }
 
         try {
@@ -168,6 +199,14 @@ public class ComplaintTool {
         }
     }
 
+    /**
+     * 评价投诉处理结果
+     *
+     * @param complaintId 投诉编号
+     * @param rating      评分（1-5分）
+     * @param comment     评价内容
+     * @return 评价结果文本
+     */
     @Tool(description = "评价投诉处理结果。用于回答'评价投诉'、'投诉处理满意'等问题")
     public String rateComplaint(
             @ToolParam(description = "投诉编号") String complaintId,
@@ -224,6 +263,7 @@ public class ComplaintTool {
         }
     }
 
+    /** 格式化投诉类型为中文 */
     private String formatType(String type) {
         if (type == null) return "未知";
         return switch (type.toLowerCase()) {
@@ -236,6 +276,7 @@ public class ComplaintTool {
         };
     }
 
+    /** 格式化投诉状态为中文 */
     private String formatState(String state) {
         if (state == null) return "未知";
         return switch (state.toLowerCase()) {

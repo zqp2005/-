@@ -4,12 +4,16 @@
 
 ## 技术栈
 
-- **Java 17**
-- **Spring Boot 3.2.5**
-- **Spring AI 1.0.0**
- - **DeepSeek AI**
-- **Redis** - 会话存储
-- **MySQL** - 知识库存储
+| 技术 | 说明 |
+|------|------|
+| Java 17 | 基础语言 |
+| Spring Boot 3.2.5 | 基础框架 |
+| Spring AI 1.0.0 | AI大模型集成框架 |
+| DeepSeek | 大语言模型 |
+| Spring WebFlux | 支持流式输出 |
+| Redis | 会话/对话历史存储 |
+| MySQL | 知识库存储 |
+| Lombok | 简化代码 |
 
 ## 项目结构
 
@@ -24,26 +28,35 @@ hjy-ai-service/
 │   │   └── WebConfig.java              # Web配置
 │   ├── controller/                     # 控制器层
 │   │   ├── ChatController.java         # 对话API
-│   │   └── KnowledgeController.java     # 知识库API
+│   │   └── KnowledgeController.java    # 知识库API
 │   ├── service/                        # 服务层
 │   │   ├── ChatService.java
 │   │   └── KnowledgeService.java
+│   ├── client/                         # HTTP客户端
+│   │   └── HjyCommunityClient.java     # 调用社区系统API
 │   ├── agent/                          # AI智能体
 │   │   ├── HjyAgent.java               # 智能体定义
+│   │   ├── ToolExecutor.java           # 工具执行器
 │   │   └── SystemPrompt.java           # 系统提示词
 │   ├── tools/                          # 工具集
 │   │   ├── RepairTool.java             # 报修工具
-│   │   ├── ComplaintTool.java         # 投诉工具
+│   │   ├── ComplaintTool.java          # 投诉工具
 │   │   ├── PropertyFeeTool.java        # 物业费工具
-│   │   ├── OwnerInfoTool.java         # 业主信息工具
-│   │   ├── AnnouncementTool.java      # 公告工具
-│   │   └── CommunityTool.java         # 社区信息工具
+│   │   ├── OwnerInfoTool.java          # 业主信息工具
+│   │   ├── AnnouncementTool.java       # 公告工具
+│   │   └── CommunityTool.java          # 社区信息工具
 │   ├── dto/                            # 数据传输对象
 │   ├── common/                         # 公共模块
 │   └── knowledge/                      # 知识库模块
 └── src/main/resources/
     └── application.yml                 # 配置文件
 ```
+
+## 角色
+
+目前只有 **1个角色**：AI物业客服助手"小合"
+
+系统通过统一的 System Prompt 定义角色行为，没有多角色设计。
 
 ## 功能特性
 
@@ -52,21 +65,58 @@ hjy-ai-service/
 - 自然语言对话交互
 - 多轮对话上下文理解
 
-### 2. 智能工具调用
-- 报修服务（查询、提交、进度追踪）
-- 投诉处理（提交、查询、处理进度）
-- 物业费查询（账单、缴费、欠费）
-- 业主信息查询（基本信息、车辆、家庭成员）
-- 社区公告（通知、活动、设施）
+### 2. 智能工具调用（6大类28个工具）
 
-### 3. 知识库问答
+| 模块 | 功能 |
+|------|------|
+| **报修服务** | 查询进度、提交报修、详情查询、取消工单、评价 |
+| **投诉建议** | 查询进度、提交投诉、详情查询、评价 |
+| **物业缴费** | 查询账单、缴费指南、历史记录、欠费查询 |
+| **业主服务** | 业主信息、车辆信息、家庭成员、访客登记 |
+| **社区信息** | 社区基本信息、设施查询、周边配套、预约场地、便民服务 |
+| **公告活动** | 公告列表、详情查询、社区活动 |
+
+### 3. 可回答的问题示例
+
+#### 报修服务
+- 查报修进度、我的报修
+- 我要报修、提交报修
+- 报修详情、工单号xxx
+- 取消报修、撤销工单
+- 评价报修
+
+#### 投诉建议
+- 投诉进度、我的建议
+- 我要投诉、提建议
+- 投诉详情、建议详情
+- 评价投诉
+
+#### 物业缴费
+- 物业费、账单查询
+- 如何缴费、缴费方式
+- 历史缴费、以往缴费
+- 有没有欠费、欠费多少
+
+#### 业主服务
+- 我的信息、业主信息
+- 车辆信息、车牌号
+- 家庭成员、家人信息
+- 访客、访客记录
+- 登记访客、有人来访
+
+#### 社区信息
+- 小区介绍、社区信息、小区怎么样
+- 有什么设施、健身房、游乐场
+- 周边有什么、附近配套、地铁站、学校
+- 预约场地、预约设施、预定篮球场
+- 门禁卡、门禁权限
+- 便民服务、维修、家政
+- 公告、通知、最新消息
+- 社区活动
+
+### 4. 知识库问答
 - 基于 RAG 的知识检索
 - 物业条例、常见问题、规章制度
-
-### 4. 多场景Agent
-- 物业客服助手
-- 物业管理系统助手
-- 数据分析助手
 
 ## 快速开始
 
@@ -167,6 +217,49 @@ public class AiIntegrationController {
 | announcementTool | 社区公告 | 查询通知、活动 |
 | communityTool | 社区信息 | 查询设施、周边配套 |
 
+## 后端API接口
+
+### 认证方式
+所有请求需要 `Authorization: Bearer {token}` header，通过 `/aiLogin` 获取token
+
+### 报修服务
+| 接口 | 方法 | 路径 |
+|------|------|------|
+| 查询报修列表 | GET | `/system/repair/list` |
+| 提交报修 | POST | `/system/repair` |
+| 报修详情 | GET | `/system/repair/{id}` |
+| 取消/更新报修 | PUT | `/system/repair` |
+
+### 投诉建议
+| 接口 | 方法 | 路径 |
+|------|------|------|
+| 查询投诉列表 | GET | `/system/suggest/list` |
+| 提交投诉 | POST | `/system/suggest` |
+| 投诉详情 | GET | `/system/suggest/{id}` |
+
+### 物业缴费/业主信息
+| 接口 | 方法 | 路径 |
+|------|------|------|
+| 查询业主列表 | GET | `/system/owner/list` |
+
+### 公告
+| 接口 | 方法 | 路径 |
+|------|------|------|
+| 查询公告列表 | GET | `/system/notice/list` |
+
+### 社区信息
+| 接口 | 方法 | 路径 |
+|------|------|------|
+| 社区基本信息 | GET | `/system/community/list` |
+| 周边配套 | GET | `/system/community/nearby` |
+| 预约设施 | POST | `/system/facility/reserve` |
+
+### 访客
+| 接口 | 方法 | 路径 |
+|------|------|------|
+| 查询访客记录 | GET | `/system/visitor/list` |
+| 登记访客 | POST | `/system/visitor` |
+
 ## 配置参数
 
 | 参数 | 说明 | 默认值 |
@@ -174,6 +267,9 @@ public class AiIntegrationController {
 | hjy.ai.model | AI模型 | deepseek-chat |
 | hjy.ai.temperature | 温度参数 | 0.7 |
 | hjy.ai.maxTokens | 最大令牌数 | 2000 |
+| hjy.ai.hjy-community.base-url | 社区系统地址 | http://localhost:8080 |
+| hjy.ai.hjy-community.admin-username | 管理员用户名 | admin |
+| hjy.ai.hjy-community.admin-password | 管理员密码 | admin123 |
 
 ## 常见问题
 

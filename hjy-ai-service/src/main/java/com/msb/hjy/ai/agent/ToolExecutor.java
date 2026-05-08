@@ -10,36 +10,57 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 工具执行器 - 调用 hjy-community 后端 API 执行业务操作
+ * <p>
+ * 根据 AI 解析出的工具名称和参数，通过 HjyCommunityClient 调用
+ * 主后端系统的 REST API 获取真实数据，并格式化为自然语言返回。
+ */
 @Slf4j
 @Component
 public class ToolExecutor {
 
+    /** 社区后端 HTTP 客户端 */
     @Autowired
     private HjyCommunityClient communityClient;
 
+    /** JSON 解析器 */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 执行指定工具
+     *
+     * @param toolName  工具名称（下划线命名）
+     * @param arguments 工具参数字典
+     * @return 执行结果文本
+     */
     public String execute(String toolName, Map<String, Object> arguments) {
         log.info("执行工具: {} - 参数: {}", toolName, arguments);
 
         try {
             return switch (toolName) {
+                // 报修
                 case "query_repair_orders" -> queryRepairOrders(arguments);
                 case "create_repair_order" -> createRepairOrder(arguments);
                 case "get_repair_detail" -> getRepairDetail(arguments);
+                // 投诉
                 case "query_complaints" -> queryComplaints(arguments);
                 case "submit_complaint" -> submitComplaint(arguments);
                 case "get_complaint_detail" -> getComplaintDetail(arguments);
+                // 物业费
                 case "query_property_fee" -> queryPropertyFee(arguments);
                 case "get_payment_guide" -> getPaymentGuide(arguments);
                 case "get_payment_history" -> getPaymentHistory(arguments);
                 case "get_arrears_info" -> getArrearsInfo(arguments);
+                // 业主
                 case "query_owner_info" -> queryOwnerInfo(arguments);
                 case "get_owner_vehicles" -> getOwnerVehicles(arguments);
                 case "get_family_members" -> getFamilyMembers(arguments);
+                // 公告
                 case "query_announcements" -> queryAnnouncements(arguments);
                 case "get_announcement_detail" -> getAnnouncementDetail(arguments);
                 case "get_activities" -> getActivities(arguments);
+                // 社区
                 case "query_community_info" -> queryCommunityInfo(arguments);
                 case "get_facilities" -> getFacilities(arguments);
                 case "get_nearby_info" -> getNearbyInfo(arguments);
@@ -52,8 +73,9 @@ public class ToolExecutor {
         }
     }
 
-    // ========== 报修服务 ==========
+    // ==================== 报修服务 ====================
 
+    /** 查询报修工单列表 */
     private String queryRepairOrders(Map<String, Object> args) {
         try {
             String status = (String) args.get("status");
@@ -109,6 +131,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 创建报修工单 */
     private String createRepairOrder(Map<String, Object> args) {
         try {
             String ownerName = getStringArg(args, "owner_name");
@@ -152,6 +175,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 获取报修工单详情 */
     private String getRepairDetail(Map<String, Object> args) {
         try {
             String repairId = getStringArg(args, "repair_id");
@@ -185,8 +209,9 @@ public class ToolExecutor {
         }
     }
 
-    // ========== 投诉建议 ==========
+    // ==================== 投诉建议 ====================
 
+    /** 查询投诉建议列表 */
     private String queryComplaints(Map<String, Object> args) {
         try {
             String status = getStringArg(args, "status");
@@ -242,6 +267,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 提交投诉建议 */
     private String submitComplaint(Map<String, Object> args) {
         try {
             String ownerName = getStringArg(args, "owner_name");
@@ -286,6 +312,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 获取投诉建议详情 */
     private String getComplaintDetail(Map<String, Object> args) {
         try {
             String complaintId = getStringArg(args, "complaint_id");
@@ -319,8 +346,9 @@ public class ToolExecutor {
         }
     }
 
-    // ========== 物业费 ==========
+    // ==================== 物业费 ====================
 
+    /** 查询物业费账单 */
     private String queryPropertyFee(Map<String, Object> args) {
         Object yearObj = args.get("year");
         Object monthObj = args.get("month");
@@ -346,6 +374,7 @@ public class ToolExecutor {
                 """, year, month);
     }
 
+    /** 获取缴费指南 */
     private String getPaymentGuide(Map<String, Object> args) {
         return """
                 【物业费缴纳指南】
@@ -372,6 +401,7 @@ public class ToolExecutor {
                 """;
     }
 
+    /** 查询缴费历史 */
     private String getPaymentHistory(Map<String, Object> args) {
         String startDate = getStringArg(args, "start_date");
         String endDate = getStringArg(args, "end_date");
@@ -387,6 +417,7 @@ public class ToolExecutor {
                 """;
     }
 
+    /** 查询欠费信息 */
     private String getArrearsInfo(Map<String, Object> args) {
         String ownerName = getStringArg(args, "owner_name");
 
@@ -401,8 +432,9 @@ public class ToolExecutor {
                 """;
     }
 
-    // ========== 业主信息 ==========
+    // ==================== 业主信息 ====================
 
+    /** 查询业主信息 */
     private String queryOwnerInfo(Map<String, Object> args) {
         try {
             String ownerName = getStringArg(args, "owner_name");
@@ -457,6 +489,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 查询业主车辆信息 */
     private String getOwnerVehicles(Map<String, Object> args) {
         try {
             String ownerName = getStringArg(args, "owner_name");
@@ -499,6 +532,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 查询家庭成员信息 */
     private String getFamilyMembers(Map<String, Object> args) {
         try {
             String ownerName = getStringArg(args, "owner_name");
@@ -535,8 +569,9 @@ public class ToolExecutor {
         }
     }
 
-    // ========== 社区公告 ==========
+    // ==================== 社区公告 ====================
 
+    /** 查询公告列表 */
     private String queryAnnouncements(Map<String, Object> args) {
         try {
             String category = getStringArg(args, "category");
@@ -587,6 +622,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 获取公告详情 */
     private String getAnnouncementDetail(Map<String, Object> args) {
         try {
             String title = getStringArg(args, "title");
@@ -624,6 +660,7 @@ public class ToolExecutor {
         }
     }
 
+    /** 查询社区活动 */
     private String getActivities(Map<String, Object> args) {
         return """
                 【社区活动列表】
@@ -640,8 +677,9 @@ public class ToolExecutor {
                 """;
     }
 
-    // ========== 社区信息 ==========
+    // ==================== 社区信息 ====================
 
+    /** 查询社区基本信息 */
     private String queryCommunityInfo(Map<String, Object> args) {
         return """
                 【社区基本信息】
@@ -660,6 +698,7 @@ public class ToolExecutor {
                 """;
     }
 
+    /** 查询社区设施信息 */
     private String getFacilities(Map<String, Object> args) {
         return """
                 【社区设施信息】
@@ -687,6 +726,7 @@ public class ToolExecutor {
                 """;
     }
 
+    /** 查询周边配套信息 */
     private String getNearbyInfo(Map<String, Object> args) {
         String category = getStringArg(args, "category");
 
@@ -713,6 +753,7 @@ public class ToolExecutor {
                 """;
     }
 
+    /** 预约社区设施 */
     private String reserveFacility(Map<String, Object> args) {
         String facility = getStringArg(args, "facility");
         String date = getStringArg(args, "date");
@@ -739,13 +780,15 @@ public class ToolExecutor {
                 """, facility, date, timeSlot);
     }
 
-    // ========== 辅助方法 ==========
+    // ==================== 辅助方法 ====================
 
+    /** 从参数 Map 中安全获取字符串值 */
     private String getStringArg(Map<String, Object> args, String key) {
         Object value = args.get(key);
         return value != null ? value.toString() : null;
     }
 
+    /** 格式化报修状态为中文 */
     private String formatRepairState(String state) {
         if (state == null) return "未知";
         return switch (state.toLowerCase()) {
@@ -759,6 +802,7 @@ public class ToolExecutor {
         };
     }
 
+    /** 格式化投诉类型为中文 */
     private String formatComplaintType(String type) {
         if (type == null) return "未知";
         return switch (type.toLowerCase()) {
@@ -771,6 +815,7 @@ public class ToolExecutor {
         };
     }
 
+    /** 格式化投诉状态为中文 */
     private String formatComplaintState(String state) {
         if (state == null) return "未知";
         return switch (state.toLowerCase()) {
@@ -782,6 +827,7 @@ public class ToolExecutor {
         };
     }
 
+    /** 格式化公告类型为中文 */
     private String formatNoticeType(String type) {
         if (type == null) return "未知";
         return switch (type.toLowerCase()) {

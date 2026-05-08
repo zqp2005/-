@@ -13,19 +13,38 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 物业费管理工具 - AI 可调用的物业费相关函数
+ * <p>
+ * 提供物业费账单查询、缴费指南、缴费历史、欠费查询和费用计算功能。
+ * 通过 @Tool 注解注册为 Spring AI Function Calling 的工具。
+ */
 @Slf4j
 @Component
 public class PropertyFeeTool {
 
+    /** 社区后端 HTTP 客户端 */
     @Autowired
     private HjyCommunityClient communityClient;
 
+    /** JSON 解析器 */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** 住宅物业费单价：2.5 元/平方米/月 */
     private static final double RESIDENTIAL_RATE = 2.5;
+    /** 商铺物业费单价：5.0 元/平方米/月 */
     private static final double COMMERCIAL_RATE = 5.0;
+    /** 车位物业费单价：100 元/个/月 */
     private static final double PARKING_RATE = 100.0;
 
+    /**
+     * 查询物业费账单
+     *
+     * @param ownerName 业主姓名
+     * @param year      年份
+     * @param month     月份
+     * @return 物业费账单信息
+     */
     @Tool(description = "查询物业费账单。可以按业主姓名和月份筛选。用于回答'物业费'、'账单查询'、'我要缴费'等问题")
     public String queryPropertyFee(
             @ToolParam(description = "业主姓名") String ownerName,
@@ -88,6 +107,9 @@ public class PropertyFeeTool {
         }
     }
 
+    /**
+     * 获取物业费缴纳指南
+     */
     @Tool(description = "获取物业费缴纳指南。用于回答'如何缴费'、'缴费方式'、'在哪缴费'等问题")
     public String getPaymentGuide() {
         return """
@@ -119,6 +141,14 @@ public class PropertyFeeTool {
                 """;
     }
 
+    /**
+     * 查询缴费历史记录
+     *
+     * @param ownerName 业主姓名
+     * @param startDate 开始日期
+     * @param endDate   结束日期
+     * @return 缴费历史信息
+     */
     @Tool(description = "查询缴费历史记录。用于回答'历史缴费'、'缴费记录'、'以往缴费'等问题")
     public String getPaymentHistory(
             @ToolParam(description = "业主姓名") String ownerName,
@@ -179,6 +209,12 @@ public class PropertyFeeTool {
         }
     }
 
+    /**
+     * 查询欠费信息
+     *
+     * @param ownerName 业主姓名
+     * @return 欠费信息
+     */
     @Tool(description = "查询欠费信息。用于回答'有没有欠费'、'欠费多少'、'是否欠费'等问题")
     public String getArrearsInfo(
             @ToolParam(description = "业主姓名") String ownerName) {
@@ -242,6 +278,14 @@ public class PropertyFeeTool {
         }
     }
 
+    /**
+     * 计算物业费
+     *
+     * @param acreage      房屋面积
+     * @param propertyType 房屋类型
+     * @param months       月数
+     * @return 费用计算结果
+     */
     @Tool(description = "计算物业费。用于内部计算或回答'物业费怎么算'等问题")
     public String calculatePropertyFee(
             @ToolParam(description = "房屋面积（平方米）") Double acreage,
@@ -273,6 +317,7 @@ public class PropertyFeeTool {
         return sb.toString();
     }
 
+    /** 解析面积字符串为 double */
     private double parseAcreage(String acreageStr) {
         try {
             if (acreageStr == null || acreageStr.isEmpty() || "null".equals(acreageStr)) {
@@ -284,6 +329,7 @@ public class PropertyFeeTool {
         }
     }
 
+    /** 获取默认物业费信息（查询失败时兜底） */
     private String getDefaultPropertyFeeInfo(int year, int month) {
         return String.format("""
                 【物业费账单查询】

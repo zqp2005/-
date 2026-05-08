@@ -9,15 +9,27 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * 公告通知工具类 —— 提供社区公告、通知、活动的查询功能
+ * 通过 Spring AI @Tool 注解注册为 AI 可调用的函数
+ */
 @Slf4j
 @Component
 public class AnnouncementTool {
 
+    /** 社区后端 HTTP 客户端，用于调用 hjy-community 的 API */
     @Autowired
     private HjyCommunityClient communityClient;
 
+    /** Jackson JSON 解析器 */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 查询社区公告列表，可按类型筛选
+     *
+     * @param category 公告类型：notice(通知), announcement(公告), activity(活动), news(新闻)
+     * @return 格式化后的公告列表文本
+     */
     @Tool(description = "查询社区公告列表，可以按类型筛选。用于回答'公告'、'通知'、'社区最新消息'、'有什么通知'等问题")
     public String queryAnnouncements(
             @ToolParam(description = "公告类型：notice(通知), announcement(公告), activity(活动), news(新闻)") String category) {
@@ -71,6 +83,12 @@ public class AnnouncementTool {
         }
     }
 
+    /**
+     * 根据标题获取公告详情
+     *
+     * @param title 公告标题（支持模糊匹配）
+     * @return 公告详情文本，包含标题、类型、内容和发布时间
+     */
     @Tool(description = "获取公告详情。用于回答查看具体公告内容、'公告详情'、'查看xx通知'等问题")
     public String getAnnouncementDetail(
             @ToolParam(description = "公告标题") String title) {
@@ -111,6 +129,12 @@ public class AnnouncementTool {
         }
     }
 
+    /**
+     * 查询社区活动列表
+     *
+     * @param status 活动状态：upcoming(即将开始), ongoing(进行中), ended(已结束)
+     * @return 格式化后的活动列表文本
+     */
     @Tool(description = "查询社区活动。用于回答'有什么活动'、'社区活动'、'有什么有趣的活动'等问题")
     public String getActivities(
             @ToolParam(description = "活动状态：upcoming(即将开始), ongoing(进行中), ended(已结束)") String status) {
@@ -158,6 +182,9 @@ public class AnnouncementTool {
         }
     }
 
+    /**
+     * 获取默认活动信息（当接口不可用时降级返回）
+     */
     private String getDefaultActivities() {
         return """
                 【社区活动列表】
@@ -174,6 +201,12 @@ public class AnnouncementTool {
                 """;
     }
 
+    /**
+     * 将公告类型的英文标识转为中文显示
+     *
+     * @param type 英文类型标识
+     * @return 中文类型名称
+     */
     private String formatType(String type) {
         if (type == null) return "未知";
         return switch (type.toLowerCase()) {
@@ -185,6 +218,13 @@ public class AnnouncementTool {
         };
     }
 
+    /**
+     * 截断字符串至指定长度并追加省略号
+     *
+     * @param str       原始字符串
+     * @param maxLength 最大长度
+     * @return 截断后的字符串
+     */
     private String substring(String str, int maxLength) {
         if (str == null || str.length() <= maxLength) {
             return str;

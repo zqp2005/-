@@ -12,15 +12,27 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 社区信息工具类 —— 提供社区基本信息、设施、周边配套、门禁卡、便民服务等查询功能
+ * 通过 Spring AI @Tool 注解注册为 AI 可调用的函数
+ */
 @Slf4j
 @Component
 public class CommunityTool {
 
+    /** 社区后端 HTTP 客户端，用于调用 hjy-community 的 API */
     @Autowired
     private HjyCommunityClient communityClient;
 
+    /** Jackson JSON 解析器 */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 查询社区基本信息
+     *
+     * @param infoType 信息类型：basic(基本信息), property(物业信息), contact(联系方式)
+     * @return 格式化后的社区信息文本
+     */
     @Tool(description = "查询社区基本信息。用于回答'小区介绍'、'社区信息'、'小区怎么样'等问题")
     public String queryCommunityInfo(
             @ToolParam(description = "信息类型：basic(基本信息), property(物业信息), contact(联系方式)") String infoType) {
@@ -70,6 +82,11 @@ public class CommunityTool {
         }
     }
 
+    /**
+     * 查询社区设施信息（休闲、运动、生活、公共设施）
+     *
+     * @return 格式化后的设施信息文本
+     */
     @Tool(description = "查询社区设施信息。用于回答'有什么设施'、'健身房'、'游乐场'、'游泳池'等问题")
     public String getFacilities() {
         log.info("查询社区设施");
@@ -104,6 +121,12 @@ public class CommunityTool {
                 """;
     }
 
+    /**
+     * 查询社区周边配套信息
+     *
+     * @param category 配套类别：traffic(交通), education(教育), medical(医疗), shopping(商业), park(公园)
+     * @return 格式化后的周边配套信息文本
+     */
     @Tool(description = "查询周边配套信息。用于回答'周边有什么'、'附近配套'、'地铁站'、'学校'等问题")
     public String getNearbyInfo(
             @ToolParam(description = "配套类别：traffic(交通), education(教育), medical(医疗), shopping(商业), park(公园)") String category) {
@@ -145,6 +168,14 @@ public class CommunityTool {
         }
     }
 
+    /**
+     * 预约社区设施
+     *
+     * @param facility 设施名称，如：篮球场、健身房
+     * @param date     预约日期，格式：yyyy-MM-dd
+     * @param timeSlot 时间段，如：14:00-16:00
+     * @return 预约结果文本
+     */
     @Tool(description = "预约社区设施。用于回答'预约场地'、'预约设施'、'预定篮球场'等问题")
     public String getFacilitiesReservation(
             @ToolParam(description = "设施名称，如：篮球场、健身房") String facility,
@@ -222,6 +253,12 @@ public class CommunityTool {
         }
     }
 
+    /**
+     * 查询门禁卡办理信息及办理流程
+     *
+     * @param ownerName 业主姓名
+     * @return 门禁卡办理指南文本
+     */
     @Tool(description = "查询门禁卡办理信息。用于回答'门禁卡'、'门禁权限'、'如何开门'等问题")
     public String getAccessCardInfo(
             @ToolParam(description = "业主姓名") String ownerName) {
@@ -288,6 +325,12 @@ public class CommunityTool {
         }
     }
 
+    /**
+     * 查询便民服务信息（维修、保洁、搬家、护理等）
+     *
+     * @param serviceType 服务类型：repair(维修), cleaning(保洁), moving(搬家), nursing(护理)
+     * @return 格式化后的便民服务信息文本
+     */
     @Tool(description = "查询便民服务信息。用于回答'便民服务'、'便民'、'维修'、'家政'等问题")
     public String getConvenientServices(
             @ToolParam(description = "服务类型：repair(维修), cleaning(保洁), moving(搬家), nursing(护理)") String serviceType) {
@@ -334,6 +377,9 @@ public class CommunityTool {
         return sb.toString();
     }
 
+    /**
+     * 获取默认社区信息（当接口不可用时降级返回）
+     */
     private String getDefaultCommunityInfo() {
         return """
                 【社区基本信息】
@@ -352,6 +398,9 @@ public class CommunityTool {
                 """;
     }
 
+    /**
+     * 获取默认周边配套信息（当接口不可用时降级返回）
+     */
     private String getDefaultNearbyInfo() {
         return """
                 【周边配套信息】
@@ -385,6 +434,12 @@ public class CommunityTool {
                 """;
     }
 
+    /**
+     * 将周边配套类型的英文标识转为中文显示
+     *
+     * @param type 英文类型标识
+     * @return 中文格式的类型标签
+     */
     private String formatNearbyType(String type) {
         if (type == null) return "";
         return switch (type.toLowerCase()) {

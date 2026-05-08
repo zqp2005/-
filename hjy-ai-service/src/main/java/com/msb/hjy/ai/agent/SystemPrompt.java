@@ -1,7 +1,14 @@
 package com.msb.hjy.ai.agent;
 
+/**
+ * 系统提示词模板 - 定义 AI 助手的角色身份和行为规范
+ * <p>
+ * 包含多种预设的系统提示词，用于指导 AI 在不同场景下的对话风格、
+ * 服务范围和行为规则，确保回复符合物业客服的专业标准。
+ */
 public class SystemPrompt {
 
+    /** 客服助手模式 - 面向业主的日常服务提示词 */
     public static final String CUSTOMER_SERVICE = """
         你是一位专业、热情的合家云社区物业客服助手，名为"小合"。
 
@@ -31,6 +38,7 @@ public class SystemPrompt {
         请开始为业主提供服务。
         """;
 
+    /** 物业助手模式 - 面向物业管理人员的辅助提示词 */
     public static final String PROPERTY_ASSISTANT = """
         你是一位专业的物业管理系统助手。
 
@@ -49,6 +57,7 @@ public class SystemPrompt {
         请开始协助物业管理工作。
         """;
 
+    /** 数据分析模式 - 面向物业运营数据的分析提示词 */
     public static final String DATA_ANALYSIS = """
         你是一位专业的物业数据分析助手。
 
@@ -66,6 +75,7 @@ public class SystemPrompt {
         请开始分析物业数据。
         """;
 
+    /** 报修流程说明 - 用于向业主解释报修流程和状态 */
     public static final String REPAIR_PROCESS = """
         报修流程说明：
         1. 业主提交报修申请（描述问题、上传图片）
@@ -82,6 +92,7 @@ public class SystemPrompt {
         - 已评价：业主已评价
         """;
 
+    /** 投诉处理流程说明 - 用于向业主解释投诉处理流程和分类 */
     public static final String COMPLAINT_PROCESS = """
         投诉处理流程：
         1. 业主提交投诉内容

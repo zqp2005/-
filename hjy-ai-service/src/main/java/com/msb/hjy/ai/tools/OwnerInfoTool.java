@@ -9,15 +9,30 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * 业主信息工具 - AI 可调用的业主相关函数
+ * <p>
+ * 提供业主信息查询、车辆信息、家庭成员、访客记录和访客登记功能。
+ * 通过 @Tool 注解注册为 Spring AI Function Calling 的工具。
+ */
 @Slf4j
 @Component
 public class OwnerInfoTool {
 
+    /** 社区后端 HTTP 客户端 */
     @Autowired
     private HjyCommunityClient communityClient;
 
+    /** JSON 解析器 */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 查询业主信息
+     *
+     * @param ownerName 业主姓名
+     * @param phone     联系电话
+     * @return 业主信息列表
+     */
     @Tool(description = "查询业主信息。用于回答'我的信息'、'业主信息'、'查一下我的信息'等问题")
     public String queryOwnerInfo(
             @ToolParam(description = "业主姓名") String ownerName,
@@ -77,6 +92,12 @@ public class OwnerInfoTool {
         }
     }
 
+    /**
+     * 查询业主车辆信息
+     *
+     * @param ownerName 业主姓名
+     * @return 车辆信息
+     */
     @Tool(description = "查询业主车辆信息。用于回答'车辆信息'、'车牌号'、'我的车'等问题")
     public String getOwnerVehicles(
             @ToolParam(description = "业主姓名") String ownerName) {
@@ -122,6 +143,12 @@ public class OwnerInfoTool {
         }
     }
 
+    /**
+     * 查询家庭成员信息
+     *
+     * @param ownerName 业主姓名
+     * @return 家庭成员信息
+     */
     @Tool(description = "查询家庭成员信息。用于回答'家庭成员'、'家人信息'、'有几口人'等问题")
     public String getFamilyMembers(
             @ToolParam(description = "业主姓名") String ownerName) {
@@ -161,6 +188,13 @@ public class OwnerInfoTool {
         }
     }
 
+    /**
+     * 查询访客登记信息
+     *
+     * @param ownerName 业主姓名
+     * @param date      日期
+     * @return 访客记录列表
+     */
     @Tool(description = "查询访客登记信息。用于回答'访客'、'有谁来过了'、'访客记录'等问题")
     public String queryVisitors(
             @ToolParam(description = "业主姓名") String ownerName,
@@ -215,6 +249,15 @@ public class OwnerInfoTool {
         }
     }
 
+    /**
+     * 登记访客信息
+     *
+     * @param visitorName  访客姓名
+     * @param visitorPhone 访客电话
+     * @param ownerName    被访业主姓名
+     * @param reason       来访事由
+     * @return 登记结果
+     */
     @Tool(description = "登记访客信息。用于回答'登记访客'、'有人来访'等问题")
     public String registerVisitor(
             @ToolParam(description = "访客姓名") String visitorName,
@@ -265,11 +308,13 @@ public class OwnerInfoTool {
         }
     }
 
+    /** 格式化性别为中文 */
     private String formatGender(String gender) {
         if (gender == null || gender.isEmpty()) return "未知";
         return "M".equalsIgnoreCase(gender) ? "男" : "F".equalsIgnoreCase(gender) ? "女" : gender;
     }
 
+    /** 格式化业主状态为中文 */
     private String formatStatus(String status) {
         if (status == null || status.isEmpty()) return "正常";
         return "0".equals(status) ? "正常" : "1".equals(status) ? "禁用" : status;

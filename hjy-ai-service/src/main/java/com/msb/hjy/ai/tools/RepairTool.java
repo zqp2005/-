@@ -12,15 +12,31 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 报修服务工具 - AI 可调用的报修相关函数
+ * <p>
+ * 提供报修工单的查询、创建、详情查看、取消和评价功能。
+ * 通过 @Tool 注解注册为 Spring AI Function Calling 的工具，
+ * AI 根据用户意图自动匹配调用。
+ */
 @Slf4j
 @Component
 public class RepairTool {
 
+    /** 社区后端 HTTP 客户端 */
     @Autowired
     private HjyCommunityClient communityClient;
 
+    /** JSON 解析器 */
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * 查询报修工单列表
+     *
+     * @param status    状态筛选（pending/allocated/processing/completed/rated）
+     * @param ownerName 业主姓名筛选
+     * @return 格式化的报修工单列表文本
+     */
     @Tool(description = "查询报修工单列表，可以按状态或业主名筛选。用于回答'报修进度'、'我的报修'、'有哪些报修'等问题")
     public String queryRepairOrders(
             @ToolParam(description = "报修状态筛选：pending(待处理), allocated(已派单), processing(处理中), completed(已完成), rated(已评价)") String status,
@@ -80,6 +96,16 @@ public class RepairTool {
         }
     }
 
+    /**
+     * 创建新的报修工单
+     *
+     * @param ownerName 业主姓名（必填）
+     * @param phone     联系电话
+     * @param location  报修位置
+     * @param problem   问题描述（必填）
+     * @param category  报修类别
+     * @return 创建结果文本
+     */
     @Tool(description = "创建新的报修工单。用于回答'我要报修'、'提交报修'、'报修水管'等问题，需要业主姓名、联系电话、报修位置和问题描述")
     public String createRepairOrder(
             @ToolParam(description = "业主姓名，必填") String ownerName,
@@ -132,6 +158,12 @@ public class RepairTool {
         }
     }
 
+    /**
+     * 获取报修工单详情
+     *
+     * @param repairId 报修工单号
+     * @return 格式化的工单详情文本
+     */
     @Tool(description = "获取报修工单详情。用于回答'报修详情'、'工单号xxx'等问题")
     public String getRepairDetail(
             @ToolParam(description = "报修工单号") String repairId) {
@@ -169,6 +201,13 @@ public class RepairTool {
         }
     }
 
+    /**
+     * 取消报修工单
+     *
+     * @param repairId 报修工单号
+     * @param reason   取消原因
+     * @return 取消结果文本
+     */
     @Tool(description = "取消报修工单。用于回答'取消报修'、'撤销工单'等问题")
     public String cancelRepairOrder(
             @ToolParam(description = "报修工单号") String repairId,
@@ -208,6 +247,14 @@ public class RepairTool {
         }
     }
 
+    /**
+     * 评价报修服务
+     *
+     * @param repairId 报修工单号
+     * @param rating   评分（1-5分）
+     * @param comment  评价内容
+     * @return 评价结果文本
+     */
     @Tool(description = "评价报修服务。用于回答'评价报修'、'服务满意'等问题")
     public String rateRepair(
             @ToolParam(description = "报修工单号") String repairId,
@@ -264,6 +311,7 @@ public class RepairTool {
         }
     }
 
+    /** 格式化报修状态为中文 */
     private String formatState(String state) {
         if (state == null) return "未知";
         return switch (state.toLowerCase()) {
@@ -278,6 +326,7 @@ public class RepairTool {
         };
     }
 
+    /** 截断长文本（用于摘要显示） */
     private String substring(String str, int maxLength) {
         if (str == null || str.length() <= maxLength) {
             return str;

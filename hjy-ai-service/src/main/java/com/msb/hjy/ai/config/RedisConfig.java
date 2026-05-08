@@ -7,9 +7,22 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/**
+ * Redis 配置类
+ * <p>
+ * 自定义 RedisTemplate，Key 使用 String 序列化（方便查看），
+ * Value 使用 Jackson2JsonRedisSerializer JSON 序列化，
+ * 用于存储对话历史、用户上下文等数据。
+ */
 @Configuration
 public class RedisConfig {
 
+    /**
+     * 配置 RedisTemplate Bean
+     * <p>
+     * Key 用 StringRedisSerializer（人类可读），
+     * Value 用 Jackson2JsonRedisSerializer（支持对象序列化）。
+     */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();

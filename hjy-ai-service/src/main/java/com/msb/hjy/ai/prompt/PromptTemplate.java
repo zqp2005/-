@@ -5,12 +5,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+/**
+ * 提示词模板管理
+ * <p>
+ * 提供问候语、帮助信息、报修查询、费用查询、活动查询等场景的
+ * 预定义提示词模板，用于构建结构化的用户消息，引导 AI 生成更规范的回复。
+ */
 @Data
 @Component
 public class PromptTemplate {
 
+    /** 问候语 */
     public static final String GREETING = "您好！我是合家云社区的AI助手小合，很高兴为您服务。请问有什么可以帮助您的？";
 
+    /** 帮助信息 - 列出可提供的服务列表 */
     public static final String HELP_PROMPT = """
             我可以帮您：
             1. 报修服务 - 提交报修、查询进度
@@ -22,6 +30,7 @@ public class PromptTemplate {
             请告诉我您的需求！
             """;
 
+    /** 构建报修咨询的引导提示词 */
     public static String buildRepairPrompt(String problem) {
         return String.format("""
                 业主咨询报修问题：%s
@@ -34,6 +43,7 @@ public class PromptTemplate {
                 """, problem);
     }
 
+    /** 构建物业费查询的引导提示词 */
     public static String buildFeePrompt(String period) {
         return String.format("""
                 业主查询物业费信息：%s
@@ -46,6 +56,7 @@ public class PromptTemplate {
                 """, period);
     }
 
+    /** 构建社区活动查询的引导提示词 */
     public static String buildActivityPrompt(String type) {
         return String.format("""
                 业主查询社区活动：%s
@@ -58,6 +69,7 @@ public class PromptTemplate {
                 """, type);
     }
 
+    /** 构建无法理解用户意图时的兜底回复 */
     public static String buildUnknownPrompt() {
         return """
                 抱歉，我暂时无法理解您的问题。
@@ -71,6 +83,7 @@ public class PromptTemplate {
                 """;
     }
 
+    /** 构建数据分析的引导提示词 */
     public static String buildDataAnalysisPrompt(List<String> dataTypes) {
         StringBuilder sb = new StringBuilder("请分析以下数据：\n");
         for (int i = 0; i < dataTypes.size(); i++) {

@@ -12,10 +12,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
+/**
+ * 全局异常处理器
+ * <p>
+ * 统一拦截 Controller 层抛出的各类异常，转换为标准 Result 响应格式，
+ * 避免异常信息直接暴露给前端，提升系统安全性和用户体验。
+ */
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /** 处理 @Valid 参数校验失败异常（请求体校验） */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleValidException(MethodArgumentNotValidException e) {
@@ -26,6 +33,7 @@ public class GlobalExceptionHandler {
         return Result.error(400, message);
     }
 
+    /** 处理参数绑定异常（表单参数绑定失败） */
     @ExceptionHandler(BindException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleBindException(BindException e) {
@@ -36,6 +44,7 @@ public class GlobalExceptionHandler {
         return Result.error(400, message);
     }
 
+    /** 处理非法参数异常 */
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Result<Void> handleIllegalArgumentException(IllegalArgumentException e) {
@@ -43,6 +52,7 @@ public class GlobalExceptionHandler {
         return Result.error(400, e.getMessage());
     }
 
+    /** 处理运行时异常 */
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleRuntimeException(RuntimeException e) {
@@ -50,6 +60,7 @@ public class GlobalExceptionHandler {
         return Result.error("系统繁忙，请稍后重试");
     }
 
+    /** 处理未知系统异常（兜底） */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Result<Void> handleException(Exception e) {
