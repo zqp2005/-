@@ -7,7 +7,7 @@ import java.io.Serializable;
  * @author spikeCong
  * @date 2023/3/1
  **/
-public class BaseResponse<T> implements Serializable {
+public class  BaseResponse<T> implements Serializable {
 
     private static final long serialVersionUID = 1901152752394073986L;
 
