@@ -83,6 +83,7 @@
     <insert id="insertOwnerRoom" parameterType="HjyOwnerRoom" useGeneratedKeys="true" keyProperty="ownerRoomId">
         INSERT INTO hjy_owner_room
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ownerRoomId != null">owner_room_id,</if>
             <if test="communityId != null">community_id,</if>
             <if test="buildingId != null">building_id,</if>
             <if test="unitId != null">unit_id,</if>
@@ -95,6 +96,7 @@
             create_time
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="ownerRoomId != null">#{ownerRoomId},</if>
             <if test="communityId != null">#{communityId},</if>
             <if test="buildingId != null">#{buildingId},</if>
             <if test="unitId != null">#{unitId},</if>
@@ -158,6 +160,7 @@
     <insert id="insertRecord" parameterType="HjyOwnerRoomRecord" useGeneratedKeys="true" keyProperty="recordId">
         INSERT INTO hjy_owner_room_record
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="recordId != null">record_id,</if>
             <if test="ownerRoomId != null">owner_room_id,</if>
             <if test="roomId != null">room_id,</if>
             <if test="communityId != null">community_id,</if>
@@ -173,6 +176,7 @@
             create_time
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="recordId != null">#{recordId},</if>
             <if test="ownerRoomId != null">#{ownerRoomId},</if>
             <if test="roomId != null">#{roomId},</if>
             <if test="communityId != null">#{communityId},</if>

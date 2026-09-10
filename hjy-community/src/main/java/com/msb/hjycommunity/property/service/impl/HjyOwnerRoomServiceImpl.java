@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyOwnerRoom;
@@ -54,6 +55,8 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
         // 状态一律由审核流程控制
         ownerRoom.setRoomStatus(BINDING_AUDITING);
         ownerRoom.setCreateBy(SecurityUtils.getUserName());
+        // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
+        ownerRoom.setOwnerRoomId(IdWorker.getId());
         return ownerRoomMapper.insertOwnerRoom(ownerRoom);
     }
 
@@ -82,6 +85,7 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
             }
             if (BINDING_BOUND.equals(ownerRoom.getRoomStatus())) {
                 HjyOwnerRoomRecord record = new HjyOwnerRoomRecord();
+                record.setRecordId(IdWorker.getId());
                 record.setOwnerRoomId(String.valueOf(ownerRoomId));
                 record.setRoomId(ownerRoom.getRoomId());
                 record.setCommunityId(ownerRoom.getCommunityId());
@@ -127,6 +131,7 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
 
         // 审核留痕
         HjyOwnerRoomRecord record = new HjyOwnerRoomRecord();
+        record.setRecordId(IdWorker.getId());
         record.setOwnerRoomId(String.valueOf(ownerRoomId));
         record.setRoomId(ownerRoom.getRoomId());
         record.setCommunityId(ownerRoom.getCommunityId());
