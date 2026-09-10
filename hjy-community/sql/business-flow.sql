@@ -76,3 +76,6 @@ VALUES ('报修派单', 2061, 1, '', '', 1, 'F', '0', '0', 'system:repair:assign
 ALTER TABLE hjy_repair
   ADD COLUMN owner_real_name      varchar(50) COMMENT '业主姓名',
   ADD COLUMN owner_phone_number   varchar(20) COMMENT '业主手机号';
+
+-- 6) 修复：报修管理目录(2067)与报修信息菜单(2061)此前 visible=1（隐藏），恢复显示
+UPDATE sys_menu SET visible = '0' WHERE menu_id IN (2067, 2061);
