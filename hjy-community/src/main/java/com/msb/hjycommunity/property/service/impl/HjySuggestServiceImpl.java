@@ -76,6 +76,7 @@ public class HjySuggestServiceImpl implements HjySuggestService {
         update.setComplaintState(SuggestState.PROCESSING);
         update.setHandleBy(SecurityUtils.getUserName());
         update.setHandleTime(new Date());
+        update.setUpdateBy(SecurityUtils.getUserName());
         return suggestMapper.updateSuggest(update);
     }
 
@@ -92,6 +93,7 @@ public class HjySuggestServiceImpl implements HjySuggestService {
         update.setComplaintSuggestId(complaintSuggestId);
         update.setComplaintState(SuggestState.REPLIED);
         update.setReplyContent(replyContent);
+        update.setUpdateBy(SecurityUtils.getUserName());
         return suggestMapper.updateSuggest(update);
     }
 
@@ -110,6 +112,7 @@ public class HjySuggestServiceImpl implements HjySuggestService {
         update.setComplaintSuggestId(complaintSuggestId);
         update.setComplaintState(SuggestState.CLOSED);
         update.setRemark(reason);
+        update.setUpdateBy(SecurityUtils.getUserName());
         return suggestMapper.updateSuggest(update);
     }
 

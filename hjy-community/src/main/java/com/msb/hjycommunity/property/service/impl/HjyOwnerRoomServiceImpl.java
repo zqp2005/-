@@ -63,6 +63,10 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
     @Override
     @Transactional
     public int updateOwnerRoom(HjyOwnerRoom ownerRoom) {
+        // 流转字段只允许动作接口修改，普通编辑一律忽略（与报修/投诉编辑降级同模式）
+        ownerRoom.setRoomStatus(null);
+        ownerRoom.setRoomId(null);
+        ownerRoom.setOwnerId(null);
         ownerRoom.setUpdateBy(SecurityUtils.getUserName());
         return ownerRoomMapper.updateOwnerRoom(ownerRoom);
     }
@@ -82,6 +86,9 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
             HjyOwnerRoom ownerRoom = ownerRoomMapper.selectOwnerRoomById(ownerRoomId);
             if (ownerRoom == null) {
                 continue;
+            }
+            if (BINDING_REJECTED.equals(ownerRoom.getRoomStatus())) {
+                throw new CustomException(500, "已驳回的绑定记录仅作留痕保留，不支持删除");
             }
             if (BINDING_BOUND.equals(ownerRoom.getRoomStatus())) {
                 HjyOwnerRoomRecord record = new HjyOwnerRoomRecord();

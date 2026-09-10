@@ -116,7 +116,7 @@
             <if test="cancelTime != null">cancel_time = #{cancelTime},</if>
             <if test="communityId != null">community_id = #{communityId},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
-            <if test="remark != null">remark = #{remark},</if>
+            <if test="remark != null and remark != ''">remark = #{remark},</if>
             update_time = NOW()
         </set>
         WHERE repair_id = #{repairId}

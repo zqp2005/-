@@ -153,7 +153,7 @@
     </delete>
 
     <select id="countActiveBindingByOwner" parameterType="Long" resultType="long">
-        SELECT COUNT(*) FROM hjy_owner_room WHERE owner_id = #{ownerId} AND room_status != 'Rejected'
+        SELECT COUNT(*) FROM hjy_owner_room WHERE owner_id = #{ownerId} AND (room_status IS NULL OR room_status != 'Rejected')
     </select>
 
 </mapper>

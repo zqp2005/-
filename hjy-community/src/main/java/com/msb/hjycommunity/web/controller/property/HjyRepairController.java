@@ -2,6 +2,7 @@ package com.msb.hjycommunity.web.controller.property;
 
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
+import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.core.page.PageResult;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyRepair;
@@ -78,7 +79,11 @@ public class HjyRepairController extends BaseController {
     @PutMapping("/assign/{repairId}")
     @PreAuthorize("@pe.hasPerms('system:repair:assign')")
     public BaseResponse assign(@PathVariable Long repairId, @RequestBody Map<String, Object> params) {
-        Long assignmentId = Long.valueOf(params.get("assignmentId").toString());
+        Object assignmentIdParam = params.get("assignmentId");
+        if (assignmentIdParam == null) {
+            throw new CustomException(500, "参数缺失：assignmentId");
+        }
+        Long assignmentId = Long.valueOf(assignmentIdParam.toString());
         return toAjax(repairService.assignRepair(repairId, assignmentId));
     }
 

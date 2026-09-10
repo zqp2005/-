@@ -2,6 +2,7 @@ package com.msb.hjycommunity.web.controller.property;
 
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
+import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.core.page.PageResult;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjySuggest;
@@ -87,7 +88,11 @@ public class HjySuggestController extends BaseController {
     @PutMapping("/reply/{complaintSuggestId}")
     @PreAuthorize("@pe.hasPerms('system:suggest:reply')")
     public BaseResponse reply(@PathVariable Long complaintSuggestId, @RequestBody Map<String, Object> params) {
-        return toAjax(suggestService.replySuggest(complaintSuggestId, params.get("replyContent").toString()));
+        Object replyContent = params.get("replyContent");
+        if (replyContent == null) {
+            throw new CustomException(500, "参数缺失：replyContent");
+        }
+        return toAjax(suggestService.replySuggest(complaintSuggestId, replyContent.toString()));
     }
 
     /**

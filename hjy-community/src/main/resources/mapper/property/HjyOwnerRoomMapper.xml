@@ -140,7 +140,7 @@
 
     <select id="countActiveBinding" resultType="long">
         SELECT COUNT(*) FROM hjy_owner_room
-        WHERE room_id = #{roomId} AND owner_id = #{ownerId} AND room_status != 'Rejected'
+        WHERE room_id = #{roomId} AND owner_id = #{ownerId} AND (room_status IS NULL OR room_status != 'Rejected')
     </select>
 
     <select id="countRoomBindings" parameterType="Long" resultType="long">
@@ -153,7 +153,7 @@
                owner_type, room_status, record_audit_opinion, record_audit_type,
                create_by, create_time, remark
         FROM hjy_owner_room_record
-        WHERE owner_room_id = #{ownerRoomId}
+        WHERE owner_room_id = CAST(#{ownerRoomId} AS CHAR)
         ORDER BY create_time DESC
     </select>
 
