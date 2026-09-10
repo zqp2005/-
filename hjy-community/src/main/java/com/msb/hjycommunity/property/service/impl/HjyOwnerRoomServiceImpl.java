@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -68,7 +67,8 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
     @Override
     @Transactional
     public int deleteOwnerRoomById(Long ownerRoomId) {
-        return ownerRoomMapper.deleteOwnerRoomById(ownerRoomId);
+        // 委托批量删除，单条删除同样走解绑留痕语义
+        return deleteOwnerRoomByIds(new Long[]{ownerRoomId});
     }
 
     @Override

@@ -29,6 +29,12 @@
     <resultMap type="HjyOwnerRoomRecord" id="HjyOwnerRoomRecordResult">
         <id     property="recordId"           column="record_id"         />
         <result property="ownerRoomId"         column="owner_room_id"     />
+        <result property="roomId"             column="room_id"           />
+        <result property="communityId"        column="community_id"      />
+        <result property="buildingId"         column="building_id"       />
+        <result property="unitId"             column="unit_id"           />
+        <result property="ownerId"            column="owner_id"          />
+        <result property="ownerType"          column="owner_type"        />
         <result property="roomStatus"         column="room_status"       />
         <result property="recordAuditOpinion" column="record_audit_opinion"/>
         <result property="recordAuditType"   column="record_audit_type"/>
@@ -141,17 +147,24 @@
     </select>
 
     <select id="selectRecordList" parameterType="Long" resultMap="HjyOwnerRoomRecordResult">
-        SELECT record_id, owner_room_id, room_status, record_audit_opinion, record_audit_type,
+        SELECT record_id, owner_room_id, room_id, community_id, building_id, unit_id, owner_id,
+               owner_type, room_status, record_audit_opinion, record_audit_type,
                create_by, create_time, remark
-        FROM zy_owner_room_record
+        FROM hjy_owner_room_record
         WHERE owner_room_id = #{ownerRoomId}
         ORDER BY create_time DESC
     </select>
 
     <insert id="insertRecord" parameterType="HjyOwnerRoomRecord" useGeneratedKeys="true" keyProperty="recordId">
-        INSERT INTO zy_owner_room_record
+        INSERT INTO hjy_owner_room_record
         <trim prefix="(" suffix=")" suffixOverrides=",">
             <if test="ownerRoomId != null">owner_room_id,</if>
+            <if test="roomId != null">room_id,</if>
+            <if test="communityId != null">community_id,</if>
+            <if test="buildingId != null">building_id,</if>
+            <if test="unitId != null">unit_id,</if>
+            <if test="ownerId != null">owner_id,</if>
+            <if test="ownerType != null and ownerType != ''">owner_type,</if>
             <if test="roomStatus != null and roomStatus != ''">room_status,</if>
             <if test="recordAuditOpinion != null and recordAuditOpinion != ''">record_audit_opinion,</if>
             <if test="recordAuditType != null and recordAuditType != ''">record_audit_type,</if>
@@ -161,6 +174,12 @@
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
             <if test="ownerRoomId != null">#{ownerRoomId},</if>
+            <if test="roomId != null">#{roomId},</if>
+            <if test="communityId != null">#{communityId},</if>
+            <if test="buildingId != null">#{buildingId},</if>
+            <if test="unitId != null">#{unitId},</if>
+            <if test="ownerId != null">#{ownerId},</if>
+            <if test="ownerType != null and ownerType != ''">#{ownerType},</if>
             <if test="roomStatus != null and roomStatus != ''">#{roomStatus},</if>
             <if test="recordAuditOpinion != null and recordAuditOpinion != ''">#{recordAuditOpinion},</if>
             <if test="recordAuditType != null and recordAuditType != ''">#{recordAuditType},</if>
