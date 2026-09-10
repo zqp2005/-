@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-**合家云社区 (HeJiaYun)** —— 社区物业管理平台，包含两个独立的 Spring Boot 服务和一个 Vue 2 前端。
+**合家云社区 (HeJiaYun)** —— 社区物业管理平台，包含两个独立的 Spring Boot 服务和一个 Vue 2 前端。**前端不在本仓库内**，位于 `D:\Uilted\hjy_ui\hejiayun_ui`。
 
 ## 仓库结构
 
@@ -12,9 +12,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 hjy/
 ├── hjy-community/       # 主物业管理后端 (Spring Boot 2.7.8, Java 8)
 ├── hjy-ai-service/       # AI 智能助手服务 (Spring Boot 3.2.5, Java 17)
-├── hejiayun_ui/          # Vue 2 + Element UI 前端
-├── generate-pptx.js      # 辅助脚本：生成项目介绍 PPT（根目录 package.json 是它的依赖，与三个主项目无关）
+├── generate-pptx.js      # 辅助脚本：生成项目介绍 PPT（根目录 package.json 是它的依赖，与主项目无关）
 └── AGENTS.md             # 内容与本文件基本同步（供 Codex 使用）
+
+前端：D:\Uilted\hjy_ui\hejiayun_ui（Vue 2 + Element UI，独立目录，不在本仓库）
 ```
 
 ## 构建和运行命令
@@ -36,9 +37,9 @@ mvn spring-boot:run                    # 运行（端口 8090）
 ```
 需要环境变量 `DEEPSEEK_API_KEY`。连接主后端的管理员凭据默认 admin/admin123，可用 `HJY_COMMUNITY_ADMIN_USER` / `HJY_COMMUNITY_ADMIN_PASSWORD` 覆盖（见 `application.yml` 中 `hjy.ai.hjy-community.*`）。Docker 部署：`docker build -t hjy-ai-service .`。
 
-### hejiayun_ui（前端）
+### hejiayun_ui（前端，位于仓库外）
 ```bash
-cd hejiayun_ui
+cd /d/Uilted/hjy_ui/hejiayun_ui
 npm run dev                            # 开发服务器（端口 80）
 npm run build:prod                     # 生产构建
 npm run lint                           # 代码检查
@@ -86,6 +87,7 @@ MySQL 8，本地 `127.0.0.1:3306`，账号 root/123456（真实值在 `hjy-commu
 - **安全认证**：`SecurityConfig` 继承 `WebSecurityConfigurerAdapter`。`JwtAuthenticationTokenFilter` 对每个请求校验 JWT。`@PreAuthorize` 注解用于方法级权限控制。`/captcha`、`/login`、`/aiLogin` 无需认证即可访问。
 - **MyBatis-Plus + PageHelper**：增删改查通过 MyBatis-Plus（`BaseMapper`），分页通过 PageHelper（`PageHelper.startPage()`），复杂查询在 `resources/mapper/**/*Mapper.xml` 中（按 monitor/property/system 模块组织）。
 - **DTO/VO 模式**：`domain/dto` 存放请求体，`domain/vo` 存放响应体。使用 Orika（`MapperFacade`）进行对象属性拷贝。
+- **业务状态机与动作接口**：报修（`RepairState`）与投诉（`SuggestState`）的状态流转只能通过动作端点驱动（报修 `assign/receive/complete/cancel/reject`，投诉 `accept/reply/close`，均为 `PUT .../动作/{id}`），非法转移抛 `CustomException` 并自动记录时间戳/操作人；普通 update 在 Service 层置空流转字段实现编辑降级。房屋绑定走审核流（Auditing→Binding/Rejected，审核/解绑在 `hjy_owner_room_record` 留痕并联动房间入住状态）。社区/楼栋/单元/房间/业主五级删除有级联校验，有下级数据整批拒绝。
 
 ### 配置文件
 - `application.yml` —— 主配置（服务器、Redis、MyBatis-Plus、JWT token）
@@ -103,27 +105,26 @@ Spring Boot 3.2.5 + Spring AI 1.0.0，使用 DeepSeek 模型（deepseek-chat）�
 
 | 包 | 职责 |
 |---------|---------|
-| `controller/` | `ChatController` —— 对话 API（同步、流式 SSE、清除会话、健康检查） |
-| `service/` | `ChatService` 接口 + `impl/ChatServiceImpl` —— 对话逻辑 |
-| `agent/` | `HjyTools`、`SystemPrompt`、`ToolExecutor` |
+| `controller/` | `ChatController` —— 对话 API（同步、流式 SSE、清除会话、健康检查），全部委托 Service |
+| `service/` | `ChatService` 接口 + `impl/ChatServiceImpl` —— 对话逻辑（同步与流式，含问候/帮助拦截与用户信息注入） |
 | `tools/` | 6 个工具类：`RepairTool`、`ComplaintTool`、`PropertyFeeTool`、`OwnerInfoTool`、`AnnouncementTool`、`CommunityTool` |
-| `client/` | `HjyCommunityClient` —— 调用 hjy-community API 的 REST 客户端（RestTemplate + JWT token） |
-| `config/` | `ChatClientConfig`（ChatClient/ChatMemory Bean + 系统提示词）、`AiConfig`、`AiProperties`、`RedisConfig`、`WebConfig` |
-| `prompt/` | `PromptTemplate` —— 提示词模板类 |
-| `dto/` | `ChatRequest`、`ChatResponse`、`KnowledgeRequest`（遗留） |
+| `client/` | `HjyCommunityClient` —— 调用 hjy-community API 的 REST 客户端（RestTemplate + JWT token，401 自动重登重试一次） |
+| `config/` | `ChatClientConfig`（ChatClient/ChatMemory Bean）、`RedisChatMemoryRepository`（Redis 会话存储）、`AiConfig`、`AiProperties`、`RedisConfig`、`WebConfig` |
+| `prompt/` | `PromptTemplate` —— 问候/帮助常量 |
+| `dto/` | `ChatRequest`、`ChatResponse` |
 | `common/` | 常量、异常、统一结果封装（`constant/`、`exception/`、`result/`） |
-| `model/` | 目前为空 |
 
 ### 核心模式
 
-- `ChatClientConfig` 中构建 `ChatClient` Bean：注入六大工具 + `defaultSystem()` **硬编码的系统提示词**（强制工具调用规则，避免幻觉）。
+- `ChatClientConfig` 中构建 `ChatClient` Bean：注入六大工具 + `defaultSystem()` 加载 `resources/prompt/system-prompt.txt`（系统提示词外置，强制工具调用规则，避免幻觉）。
 - `tools/` 包中的 `@Tool` 注解方法由 Spring AI 自动发现。AI 根据用户意图决定调用哪个工具。
-- **会话记忆是纯内存实现**：`MessageWindowChatMemory`（最近 20 条）。`RedisConfig` 定义了 `RedisTemplate` Bean 但当前无业务代码使用 —— 重启即丢失会话历史。
+- **会话记忆持久化在 Redis**：`RedisChatMemoryRepository`（key `ai:chat:memory:{sessionId}`）+ `MessageWindowChatMemory`（20 条窗口），重启不丢会话。
+- Controller 统一走 Service 调用链（同步与流式的拦截逻辑、用户信息注入都在 `ChatServiceImpl`）；SSE 每元素 `data: xxx\n\n`，正常结束以 `data: [DONE]` 收尾。
 - `HjyCommunityClient` 以管理员身份自动登录（走 `/aiLogin` 免验证码接口），缓存 JWT token，代理请求到 hjy-community 获取真实数据（报修、投诉、缴费等）。
 - WebFlux 实现流式对话（SSE），端点：`POST /ai/chat`、`POST /ai/chat/stream`、`DELETE /ai/session/{sessionId}`、`GET /ai/health`。
 - 无单元测试。
 
-## 架构：hejiayun_ui（前端）
+## 架构：hejiayun_ui（前端，实际位置 D:\Uilted\hjy_ui\hejiayun_ui）
 
 Vue 2.6 + Element UI 后台管理模板，基于 vue-admin-template。
 
