@@ -70,3 +70,9 @@ VALUES ('报修派单', 2061, 1, '', '', 1, 'F', '0', '0', 'system:repair:assign
 --                     'system:suggest:reply','system:suggest:close',
 --                     'system:ownerRoom:audit');                     -- 9 行
 -- =====================================================================
+
+-- 5) 补齐 hjy_repair 既有缺口：代码（domain/mapper 初始提交起）引用 owner_real_name/owner_phone_number，
+--    但本地库缺这两列导致 selectRepairById/list 直接 SQL 错误（Task 3 冒烟时发现）
+ALTER TABLE hjy_repair
+  ADD COLUMN owner_real_name      varchar(50) COMMENT '业主姓名',
+  ADD COLUMN owner_phone_number   varchar(20) COMMENT '业主手机号';
