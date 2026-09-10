@@ -96,6 +96,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 //认证失败处理器
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler);
 
+        // 允许同源 iframe 嵌入：前端的数据监控(Druid)与系统接口(Swagger)页面以 iframe 方式内嵌后端页面，
+        // 默认的 X-Frame-Options:DENY 会拒绝渲染（页面显示"拒绝了连接请求"），放宽为 SAMEORIGIN
+        http.headers().frameOptions().sameOrigin();
+
 //        //登出配置
         http.logout().logoutUrl("/logout").logoutSuccessHandler(logoutSuccessHandler);
 //
