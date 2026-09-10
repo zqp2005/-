@@ -72,10 +72,30 @@ public class ContextToolService {
             String ip = asText(rows.get(0).get("ipaddr"));
             String dbLocation = asText(rows.get(0).get("login_location"));
 
-            // 内网/空 IP：无法公网定位，回退使用社区注册地址
+            // 内网/空 IP：本地运行场景——本服务与用户同机，直接让高德定位"请求发起方"
+            // （即本机的公网出口IP，反映当前登录用户的真实所在地），失败再回退社区注册地址
             if (isInternalIp(ip)) {
+                if (amapKey != null && !amapKey.isBlank()) {
+                    try {
+                        String selfBody = amapRestTemplate.getForObject(
+                                "https://restapi.amap.com/v3/ip?key={key}", String.class, amapKey);
+                        JsonNode selfRoot = objectMapper.readTree(selfBody);
+                        if ("1".equals(selfRoot.path("status").asText())) {
+                            String province = selfRoot.path("province").asText("");
+                            String city = selfRoot.path("city").asText("");
+                            String location = city.isBlank() || city.equals(province)
+                                    ? province : province + city;
+                            if (!location.isBlank()) {
+                                return "用户「" + userName + "」本次登录来自本机（内网IP " + displayIp(ip)
+                                        + "），当前网络出口所在地: " + location + "（数据来源：高德IP定位）";
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("本机公网出口定位失败: {}", e.getMessage());
+                    }
+                }
                 return "用户「" + userName + "」最近一次登录IP为 " + displayIp(ip)
-                        + "（本地内网环境），使用社区注册地址: " + communityAddress();
+                        + "（本地内网环境，公网定位失败），使用社区注册地址: " + communityAddress();
             }
 
             // 公网 IP：需要高德 Key 才能定位
