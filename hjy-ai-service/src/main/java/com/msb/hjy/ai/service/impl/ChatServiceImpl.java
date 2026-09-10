@@ -9,6 +9,8 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.stereotype.Service;
 
+import reactor.core.publisher.Flux;
+
 import java.util.Set;
 
 /**
@@ -79,6 +81,33 @@ public class ChatServiceImpl implements ChatService {
             log.error("聊天处理异常 - sessionId: {}, error: {}", request.getSessionId(), e.getMessage(), e);
             return ChatResponse.error(request.getSessionId(), "AI服务暂时无法响应，请稍后重试。");
         }
+    }
+
+    @Override
+    public Flux<String> chatStream(ChatRequest request) {
+        String message = request.getMessage();
+        // 与同步接口相同的短路拦截
+        if (message == null || message.trim().isEmpty()) {
+            return Flux.just(PromptTemplate.GREETING);
+        }
+        String lowerMessage = message.trim().toLowerCase();
+        if (GREETING_KEYWORDS.contains(lowerMessage)) {
+            return Flux.just(PromptTemplate.GREETING + "\n\n" + PromptTemplate.HELP_PROMPT);
+        }
+        if (lowerMessage.contains("帮助") || lowerMessage.contains("能做什么") || lowerMessage.contains("有什么服务")) {
+            return Flux.just(PromptTemplate.HELP_PROMPT);
+        }
+
+        return chatClient.prompt()
+                .user(buildUserMessage(request))
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.getSessionId()))
+                .stream()
+                .content()
+                .map(content -> "data: " + content + "\n\n")
+                .onErrorResume(e -> {
+                    log.error("流式对话异常: {}", e.getMessage(), e);
+                    return Flux.just("data: AI服务暂时无法响应，请稍后重试。\n\n");
+                });
     }
 
     @Override
