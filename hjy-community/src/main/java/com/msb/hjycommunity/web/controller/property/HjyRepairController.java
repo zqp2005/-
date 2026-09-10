@@ -1,9 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyRepair;
 import com.msb.hjycommunity.property.service.HjyRepairService;
@@ -48,6 +50,7 @@ public class HjyRepairController extends BaseController {
      * 新增报修
      */
     @PostMapping
+    @Log(title = "报修管理", businessType = BusinessType.INSERT)
     @PreAuthorize("@pe.hasPerms('system:repair:add')")
     public BaseResponse add(@RequestBody HjyRepair repair) {
         repair.setCreateBy(SecurityUtils.getUserName());
@@ -58,6 +61,7 @@ public class HjyRepairController extends BaseController {
      * 修改报修（普通编辑仅允许内容类字段，状态走动作接口）
      */
     @PutMapping
+    @Log(title = "报修管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@pe.hasPerms('system:repair:edit')")
     public BaseResponse edit(@RequestBody HjyRepair repair) {
         repair.setUpdateBy(SecurityUtils.getUserName());
@@ -68,6 +72,7 @@ public class HjyRepairController extends BaseController {
      * 删除报修
      */
     @DeleteMapping("/{repairIds}")
+    @Log(title = "报修管理", businessType = BusinessType.DELETE)
     @PreAuthorize("@pe.hasPerms('system:repair:remove')")
     public BaseResponse remove(@PathVariable Long[] repairIds) {
         return toAjax(repairService.deleteRepairByIds(repairIds));
@@ -77,6 +82,7 @@ public class HjyRepairController extends BaseController {
      * 派单：待处理 -> 已分派
      */
     @PutMapping("/assign/{repairId}")
+    @Log(title = "报修管理", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:repair:assign')")
     public BaseResponse assign(@PathVariable Long repairId, @RequestBody Map<String, Object> params) {
         Object assignmentIdParam = params.get("assignmentId");
@@ -91,6 +97,7 @@ public class HjyRepairController extends BaseController {
      * 接单：已分派 -> 处理中
      */
     @PutMapping("/receive/{repairId}")
+    @Log(title = "报修管理", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:repair:receive')")
     public BaseResponse receive(@PathVariable Long repairId) {
         return toAjax(repairService.receiveRepair(repairId));
@@ -100,6 +107,7 @@ public class HjyRepairController extends BaseController {
      * 完成：处理中 -> 已处理
      */
     @PutMapping("/complete/{repairId}")
+    @Log(title = "报修管理", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:repair:complete')")
     public BaseResponse complete(@PathVariable Long repairId) {
         return toAjax(repairService.completeRepair(repairId));
@@ -109,6 +117,7 @@ public class HjyRepairController extends BaseController {
      * 取消：待处理/已分派 -> 已取消
      */
     @PutMapping("/cancel/{repairId}")
+    @Log(title = "报修管理", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:repair:cancel')")
     public BaseResponse cancel(@PathVariable Long repairId, @RequestBody Map<String, Object> params) {
         String reason = params.get("reason") == null ? "" : params.get("reason").toString();
@@ -119,6 +128,7 @@ public class HjyRepairController extends BaseController {
      * 不处理：待处理 -> 不处理
      */
     @PutMapping("/reject/{repairId}")
+    @Log(title = "报修管理", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:repair:reject')")
     public BaseResponse reject(@PathVariable Long repairId, @RequestBody Map<String, Object> params) {
         String reason = params.get("reason") == null ? "" : params.get("reason").toString();

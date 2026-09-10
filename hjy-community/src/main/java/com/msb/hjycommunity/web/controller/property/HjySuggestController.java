@@ -1,9 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjySuggest;
 import com.msb.hjycommunity.property.service.HjySuggestService;
@@ -48,6 +50,7 @@ public class HjySuggestController extends BaseController {
      * 新增投诉建议
      */
     @PostMapping
+    @Log(title = "投诉建议", businessType = BusinessType.INSERT)
     @PreAuthorize("@pe.hasPerms('system:suggest:add')")
     public BaseResponse add(@RequestBody HjySuggest suggest) {
         suggest.setCreateBy(SecurityUtils.getUserName());
@@ -58,6 +61,7 @@ public class HjySuggestController extends BaseController {
      * 修改投诉建议
      */
     @PutMapping
+    @Log(title = "投诉建议", businessType = BusinessType.UPDATE)
     @PreAuthorize("@pe.hasPerms('system:suggest:edit')")
     public BaseResponse edit(@RequestBody HjySuggest suggest) {
         suggest.setUpdateBy(SecurityUtils.getUserName());
@@ -68,6 +72,7 @@ public class HjySuggestController extends BaseController {
      * 删除投诉建议
      */
     @DeleteMapping("/{complaintSuggestIds}")
+    @Log(title = "投诉建议", businessType = BusinessType.DELETE)
     @PreAuthorize("@pe.hasPerms('system:suggest:remove')")
     public BaseResponse remove(@PathVariable Long[] complaintSuggestIds) {
         return toAjax(suggestService.deleteSuggestByIds(complaintSuggestIds));
@@ -77,6 +82,7 @@ public class HjySuggestController extends BaseController {
      * 受理：待受理 -> 处理中
      */
     @PutMapping("/accept/{complaintSuggestId}")
+    @Log(title = "投诉建议", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:suggest:accept')")
     public BaseResponse accept(@PathVariable Long complaintSuggestId) {
         return toAjax(suggestService.acceptSuggest(complaintSuggestId));
@@ -86,6 +92,7 @@ public class HjySuggestController extends BaseController {
      * 回复：处理中 -> 已回复
      */
     @PutMapping("/reply/{complaintSuggestId}")
+    @Log(title = "投诉建议", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:suggest:reply')")
     public BaseResponse reply(@PathVariable Long complaintSuggestId, @RequestBody Map<String, Object> params) {
         Object replyContent = params.get("replyContent");
@@ -99,6 +106,7 @@ public class HjySuggestController extends BaseController {
      * 关闭：待受理/已回复 -> 已关闭
      */
     @PutMapping("/close/{complaintSuggestId}")
+    @Log(title = "投诉建议", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:suggest:close')")
     public BaseResponse close(@PathVariable Long complaintSuggestId, @RequestBody Map<String, Object> params) {
         String reason = params.get("reason") == null ? "" : params.get("reason").toString();

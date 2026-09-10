@@ -1,8 +1,10 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyRoom;
 import com.msb.hjycommunity.property.domain.vo.HjyRoomVo;
@@ -56,6 +58,7 @@ public class HjyRoomController extends BaseController {
      * 新增房间
      */
     @PostMapping
+    @Log(title = "房屋管理", businessType = BusinessType.INSERT)
     @PreAuthorize("@pe.hasPerms('system:room:add')")
     public BaseResponse add(@RequestBody HjyRoom room) {
         room.setCreateBy(SecurityUtils.getUserName());
@@ -66,6 +69,7 @@ public class HjyRoomController extends BaseController {
      * 修改房间
      */
     @PutMapping
+    @Log(title = "房屋管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@pe.hasPerms('system:room:edit')")
     public BaseResponse edit(@RequestBody HjyRoom room) {
         room.setUpdateBy(SecurityUtils.getUserName());
@@ -76,6 +80,7 @@ public class HjyRoomController extends BaseController {
      * 删除房间
      */
     @DeleteMapping("/{roomIds}")
+    @Log(title = "房屋管理", businessType = BusinessType.DELETE)
     @PreAuthorize("@pe.hasPerms('system:room:remove')")
     public BaseResponse remove(@PathVariable Long[] roomIds) {
         return toAjax(roomService.deleteRoomByIds(roomIds));

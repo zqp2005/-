@@ -1,8 +1,10 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyOwner;
 import com.msb.hjycommunity.property.service.HjyOwnerService;
@@ -46,6 +48,7 @@ public class HjyOwnerController extends BaseController {
      * 新增业主
      */
     @PostMapping
+    @Log(title = "业主管理", businessType = BusinessType.INSERT)
     @PreAuthorize("@pe.hasPerms('system:owner:add')")
     public BaseResponse add(@RequestBody HjyOwner owner) {
         owner.setCreateBy(SecurityUtils.getUserName());
@@ -56,6 +59,7 @@ public class HjyOwnerController extends BaseController {
      * 修改业主
      */
     @PutMapping
+    @Log(title = "业主管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@pe.hasPerms('system:owner:edit')")
     public BaseResponse edit(@RequestBody HjyOwner owner) {
         owner.setUpdateBy(SecurityUtils.getUserName());
@@ -66,6 +70,7 @@ public class HjyOwnerController extends BaseController {
      * 删除业主
      */
     @DeleteMapping("/{ownerIds}")
+    @Log(title = "业主管理", businessType = BusinessType.DELETE)
     @PreAuthorize("@pe.hasPerms('system:owner:remove')")
     public BaseResponse remove(@PathVariable Long[] ownerIds) {
         return toAjax(ownerService.deleteOwnerByIds(ownerIds));

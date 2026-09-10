@@ -1,8 +1,10 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyOwnerRoom;
 import com.msb.hjycommunity.property.domain.HjyOwnerRoomRecord;
@@ -54,6 +56,7 @@ public class HjyOwnerRoomController extends BaseController {
      * 新增房屋绑定
      */
     @PostMapping
+    @Log(title = "房屋绑定", businessType = BusinessType.INSERT)
     @PreAuthorize("@pe.hasPerms('system:ownerRoom:add')")
     public BaseResponse add(@RequestBody HjyOwnerRoom ownerRoom) {
         ownerRoom.setCreateBy(SecurityUtils.getUserName());
@@ -64,6 +67,7 @@ public class HjyOwnerRoomController extends BaseController {
      * 修改房屋绑定
      */
     @PutMapping
+    @Log(title = "房屋绑定", businessType = BusinessType.UPDATE)
     @PreAuthorize("@pe.hasPerms('system:ownerRoom:edit')")
     public BaseResponse edit(@RequestBody HjyOwnerRoom ownerRoom) {
         ownerRoom.setUpdateBy(SecurityUtils.getUserName());
@@ -74,6 +78,7 @@ public class HjyOwnerRoomController extends BaseController {
      * 删除房屋绑定
      */
     @DeleteMapping("/{ownerRoomIds}")
+    @Log(title = "房屋绑定", businessType = BusinessType.DELETE)
     @PreAuthorize("@pe.hasPerms('system:ownerRoom:remove')")
     public BaseResponse remove(@PathVariable Long[] ownerRoomIds) {
         return toAjax(ownerRoomService.deleteOwnerRoomByIds(ownerRoomIds));
@@ -83,6 +88,7 @@ public class HjyOwnerRoomController extends BaseController {
      * 审核绑定：通过(pass)或驳回(reject)
      */
     @PutMapping("/audit")
+    @Log(title = "房屋绑定", businessType = BusinessType.OTHER)
     @PreAuthorize("@pe.hasPerms('system:ownerRoom:audit')")
     public BaseResponse audit(@RequestBody Map<String, Object> params) {
         Long ownerRoomId = Long.valueOf(params.get("ownerRoomId").toString());

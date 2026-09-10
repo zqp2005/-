@@ -1,8 +1,10 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyUnit;
 import com.msb.hjycommunity.property.domain.vo.HjyUnitVo;
@@ -56,6 +58,7 @@ public class HjyUnitController extends BaseController {
      * 新增单元
      */
     @PostMapping
+    @Log(title = "单元管理", businessType = BusinessType.INSERT)
     @PreAuthorize("@pe.hasPerms('system:unit:add')")
     public BaseResponse add(@RequestBody HjyUnit unit) {
         unit.setCreateBy(SecurityUtils.getUserName());
@@ -66,6 +69,7 @@ public class HjyUnitController extends BaseController {
      * 修改单元
      */
     @PutMapping
+    @Log(title = "单元管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@pe.hasPerms('system:unit:edit')")
     public BaseResponse edit(@RequestBody HjyUnit unit) {
         unit.setUpdateBy(SecurityUtils.getUserName());
@@ -76,6 +80,7 @@ public class HjyUnitController extends BaseController {
      * 删除单元
      */
     @DeleteMapping("/{unitIds}")
+    @Log(title = "单元管理", businessType = BusinessType.DELETE)
     @PreAuthorize("@pe.hasPerms('system:unit:remove')")
     public BaseResponse remove(@PathVariable Long[] unitIds) {
         return toAjax(unitService.deleteUnitByIds(unitIds));

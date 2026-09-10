@@ -17,6 +17,11 @@ public interface SysOperlogMapper extends BaseMapper<SysOperlog> {
     List<SysOperlog> selectOperlogList(SysOperlog operlog);
 
     /**
+     * 新增操作日志
+     */
+    int insertOperlog(SysOperlog operlog);
+
+    /**
      * 删除操作日志
      */
     int deleteOperlogById(@Param("operId") Long operId);

@@ -1,8 +1,10 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyBuilding;
 import com.msb.hjycommunity.property.domain.vo.HjyBuildingVo;
@@ -56,6 +58,7 @@ public class HjyBuildingController extends BaseController {
      * 新增楼栋
      */
     @PostMapping
+    @Log(title = "楼栋管理", businessType = BusinessType.INSERT)
     @PreAuthorize("@pe.hasPerms('system:building:add')")
     public BaseResponse add(@RequestBody HjyBuilding building) {
         building.setCreateBy(SecurityUtils.getUserName());
@@ -66,6 +69,7 @@ public class HjyBuildingController extends BaseController {
      * 修改楼栋
      */
     @PutMapping
+    @Log(title = "楼栋管理", businessType = BusinessType.UPDATE)
     @PreAuthorize("@pe.hasPerms('system:building:edit')")
     public BaseResponse edit(@RequestBody HjyBuilding building) {
         building.setUpdateBy(SecurityUtils.getUserName());
@@ -76,6 +80,7 @@ public class HjyBuildingController extends BaseController {
      * 删除楼栋
      */
     @DeleteMapping("/{buildingIds}")
+    @Log(title = "楼栋管理", businessType = BusinessType.DELETE)
     @PreAuthorize("@pe.hasPerms('system:building:remove')")
     public BaseResponse remove(@PathVariable Long[] buildingIds) {
         return toAjax(buildingService.deleteBuildingByIds(buildingIds));

@@ -43,6 +43,11 @@
         ORDER BY info_id DESC
     </select>
 
+    <insert id="insertLogininfor" parameterType="SysLogininfor" useGeneratedKeys="true" keyProperty="infoId">
+        INSERT INTO sys_logininfor(user_name, ipaddr, login_location, browser, os, status, msg, login_time)
+        VALUES (#{userName}, #{ipaddr}, #{loginLocation}, #{browser}, #{os}, #{status}, #{msg}, #{loginTime})
+    </insert>
+
     <delete id="deleteLogininforById" parameterType="Long">
         DELETE FROM sys_logininfor WHERE info_id = #{infoId}
     </delete>

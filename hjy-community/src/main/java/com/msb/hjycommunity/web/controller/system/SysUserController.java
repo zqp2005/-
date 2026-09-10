@@ -1,9 +1,11 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.constant.UserConstants;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.ChainedMap;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.system.domain.SysRole;
@@ -49,6 +51,7 @@ public class SysUserController extends BaseController {
      * 删除用户
      */
     @DeleteMapping("/{userIds}")
+    @Log(title = "用户管理", businessType = BusinessType.DELETE)
     public BaseResponse remove(@PathVariable Long[] userIds){
         return toAjax(userService.deleteUserByIds(userIds));
     }
@@ -110,6 +113,7 @@ public class SysUserController extends BaseController {
      * 新增用户
      */
     @PostMapping
+    @Log(title = "用户管理", businessType = BusinessType.INSERT)
     public BaseResponse add(@RequestBody SysUser user){
 
         if(UserConstants.NOT_UNIQUE.equals(userService.checkUserNameUnique(user.getUserName()))){
@@ -131,6 +135,7 @@ public class SysUserController extends BaseController {
      * 修改用户
      */
     @PutMapping
+    @Log(title = "用户管理", businessType = BusinessType.UPDATE)
     public BaseResponse edit(@RequestBody SysUser user){
 
         //校验用户是否允许操作

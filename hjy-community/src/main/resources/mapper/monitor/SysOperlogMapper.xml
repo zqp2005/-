@@ -55,6 +55,15 @@
         ORDER BY oper_id DESC
     </select>
 
+    <insert id="insertOperlog" parameterType="SysOperlog" useGeneratedKeys="true" keyProperty="operId">
+        INSERT INTO sys_oper_log(title, business_type, method, request_method, operator_type,
+                                 oper_name, dept_name, oper_url, oper_ip, oper_location,
+                                 oper_param, json_result, status, error_msg, oper_time)
+        VALUES (#{title}, #{businessType}, #{method}, #{requestMethod}, #{operatorType},
+                #{operName}, #{deptName}, #{operUrl}, #{operIp}, #{operLocation},
+                #{operParam}, #{jsonResult}, #{status}, #{errorMsg}, #{operTime})
+    </insert>
+
     <delete id="deleteOperlogById" parameterType="Long">
         DELETE FROM sys_oper_log WHERE oper_id = #{operId}
     </delete>

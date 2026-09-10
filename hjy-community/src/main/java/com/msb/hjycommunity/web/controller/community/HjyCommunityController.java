@@ -1,6 +1,8 @@
 package com.msb.hjycommunity.web.controller.community;
 
+import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.page.PageResult;
+import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.community.domain.vo.HjyCommunityVo;
 import com.msb.hjycommunity.community.service.HjyCommunityService;
 import com.msb.hjycommunity.common.core.controller.BaseController;
@@ -49,6 +51,7 @@ public class HjyCommunityController extends BaseController {
      * @return: com.msb.hjycommunity.common.core.domain.BaseResponse
      */
     @PostMapping
+    @Log(title = "社区管理", businessType = BusinessType.INSERT)
     public BaseResponse add(@RequestBody HjyCommunity hjyCommunity){
 
         return toAjax(hjyCommunityService.insertHjyCommunity(hjyCommunity));
@@ -67,6 +70,7 @@ public class HjyCommunityController extends BaseController {
      * @return: com.msb.hjycommunity.common.core.domain.BaseResponse
      */
     @PutMapping
+    @Log(title = "社区管理", businessType = BusinessType.UPDATE)
     public BaseResponse edit(@RequestBody HjyCommunity hjyCommunity){
 
         return toAjax(hjyCommunityService.updateHjyCommunity(hjyCommunity));
@@ -78,6 +82,7 @@ public class HjyCommunityController extends BaseController {
      * @return: com.msb.hjycommunity.common.core.domain.BaseResponse
      */
     @DeleteMapping("/{communityIds}")
+    @Log(title = "社区管理", businessType = BusinessType.DELETE)
     public BaseResponse delete(@PathVariable Long[] communityIds){
 
         return toAjax(hjyCommunityService.deleteHjyCommunity(communityIds));

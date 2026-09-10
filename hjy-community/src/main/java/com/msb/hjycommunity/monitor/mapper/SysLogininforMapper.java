@@ -17,6 +17,11 @@ public interface SysLogininforMapper extends BaseMapper<SysLogininfor> {
     List<SysLogininfor> selectLogininforList(SysLogininfor logininfor);
 
     /**
+     * 新增登录日志
+     */
+    int insertLogininfor(SysLogininfor logininfor);
+
+    /**
      * 删除登录日志
      */
     int deleteLogininforById(@Param("infoId") Long infoId);
