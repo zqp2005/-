@@ -67,6 +67,9 @@ public class TokenServiceImpl implements TokenService {
 
         HashMap<String, Object> claims = new HashMap<>();
         claims.put(Constants.LOGIN_USER_KEY,userKey);
+        // 携带用户身份声明，供 AI 服务（hjy-ai-service）校验 JWT 后识别用户、按用户隔离会话
+        claims.put("userId", loginUser.getUser().getUserId());
+        claims.put("userName", loginUser.getUser().getUserName());
 
         String token = Jwts.builder()
                 .setClaims(claims)
