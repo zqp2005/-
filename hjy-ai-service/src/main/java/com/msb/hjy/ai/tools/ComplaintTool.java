@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * 投诉建议工具 - AI 可调用的投诉相关函数
  * <p>
- * 提供投诉建议的列表查询、提交、详情查看和评价功能。
+ * 提供投诉建议的列表查询、提交和详情查看功能。
  * 通过 @Tool 注解注册为 Spring AI Function Calling 的工具。
  */
 @Slf4j
@@ -196,70 +196,6 @@ public class ComplaintTool {
         } catch (Exception e) {
             log.error("查询投诉详情失败: {}", e.getMessage());
             return "查询投诉详情失败，请稍后重试。";
-        }
-    }
-
-    /**
-     * 评价投诉处理结果
-     *
-     * @param complaintId 投诉编号
-     * @param rating      评分（1-5分）
-     * @param comment     评价内容
-     * @return 评价结果文本
-     */
-    @Tool(description = "评价投诉处理结果。用于回答'评价投诉'、'投诉处理满意'等问题")
-    public String rateComplaint(
-            @ToolParam(description = "投诉编号") String complaintId,
-            @ToolParam(description = "评分：1-5分") Integer rating,
-            @ToolParam(description = "评价内容") String comment) {
-        log.info("评价投诉 - complaintId: {}, rating: {}", complaintId, rating);
-
-        if (complaintId == null || complaintId.isEmpty()) {
-            return "请提供投诉编号。";
-        }
-        if (rating == null || rating < 1 || rating > 5) {
-            return "请提供有效评分（1-5分）。";
-        }
-
-        try {
-            java.util.Map<String, Object> body = new java.util.HashMap<>();
-            body.put("complaintSuggestId", complaintId);
-            body.put("suggestState", "Rated");
-            body.put("scoreNumber", rating);
-            body.put("scoreContent", comment != null ? comment : "");
-
-            String result = communityClient.put("/system/suggest", body);
-            JsonNode root = objectMapper.readTree(result);
-
-            if (root.path("code").asInt() == 200) {
-                String ratingText = switch (rating) {
-                    case 1 -> "非常不满意";
-                    case 2 -> "不满意";
-                    case 3 -> "一般";
-                    case 4 -> "满意";
-                    case 5 -> "非常满意";
-                    default -> "未评价";
-                };
-
-                return String.format("""
-                        【投诉评价成功】
-
-                        【评价信息】
-                        投诉编号：%s
-                        评分：%d分（%s）
-                        评价内容：%s
-
-                        感谢您的宝贵意见！
-                        我们将继续改进服务质量。
-                        """, complaintId, rating, ratingText,
-                        comment != null ? comment : "未填写");
-            } else {
-                return "投诉评价失败：" + root.path("msg").asText();
-            }
-
-        } catch (Exception e) {
-            log.error("评价投诉失败: {}", e.getMessage());
-            return "投诉评价失败，请稍后重试。";
         }
     }
 

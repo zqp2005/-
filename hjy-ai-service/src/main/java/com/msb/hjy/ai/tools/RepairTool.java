@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * 报修服务工具 - AI 可调用的报修相关函数
  * <p>
- * 提供报修工单的查询、创建、详情查看、取消和评价功能。
+ * 提供报修工单的查询、创建、详情查看和取消功能。
  * 通过 @Tool 注解注册为 Spring AI Function Calling 的工具，
  * AI 根据用户意图自动匹配调用。
  */
@@ -219,12 +219,9 @@ public class RepairTool {
         }
 
         try {
-            Map<String, Object> body = new HashMap<>();
-            body.put("repairId", repairId);
-            body.put("repairState", "Cancelled");
-            body.put("cancelReason", reason != null ? reason : "用户取消");
-
-            String result = communityClient.put("/system/repair", body);
+            String cancelReason = reason != null && !reason.isEmpty() ? reason : "业主取消";
+            String result = communityClient.put("/system/repair/cancel/" + repairId,
+                    Map.of("reason", cancelReason));
             JsonNode root = objectMapper.readTree(result);
 
             if (root.path("code").asInt() == 200) {
@@ -236,7 +233,7 @@ public class RepairTool {
                         取消原因：%s
 
                         如需重新报修，请再次提交。
-                        """, repairId, reason != null ? reason : "用户取消");
+                        """, repairId, cancelReason);
             } else {
                 return "取消报修工单失败：" + root.path("msg").asText();
             }
@@ -244,70 +241,6 @@ public class RepairTool {
         } catch (Exception e) {
             log.error("取消报修工单失败: {}", e.getMessage());
             return "取消报修工单失败，请稍后重试。";
-        }
-    }
-
-    /**
-     * 评价报修服务
-     *
-     * @param repairId 报修工单号
-     * @param rating   评分（1-5分）
-     * @param comment  评价内容
-     * @return 评价结果文本
-     */
-    @Tool(description = "评价报修服务。用于回答'评价报修'、'服务满意'等问题")
-    public String rateRepair(
-            @ToolParam(description = "报修工单号") String repairId,
-            @ToolParam(description = "评分：1-5分") Integer rating,
-            @ToolParam(description = "评价内容") String comment) {
-        log.info("评价报修 - repairId: {}, rating: {}", repairId, rating);
-
-        if (repairId == null || repairId.isEmpty()) {
-            return "请提供报修工单号。";
-        }
-        if (rating == null || rating < 1 || rating > 5) {
-            return "请提供有效评分（1-5分）。";
-        }
-
-        try {
-            Map<String, Object> body = new HashMap<>();
-            body.put("repairId", repairId);
-            body.put("repairState", "Rated");
-            body.put("scoreNumber", rating);
-            body.put("scoreContent", comment != null ? comment : "");
-
-            String result = communityClient.put("/system/repair", body);
-            JsonNode root = objectMapper.readTree(result);
-
-            if (root.path("code").asInt() == 200) {
-                String ratingText = switch (rating) {
-                    case 1 -> "非常不满意";
-                    case 2 -> "不满意";
-                    case 3 -> "一般";
-                    case 4 -> "满意";
-                    case 5 -> "非常满意";
-                    default -> "未评价";
-                };
-
-                return String.format("""
-                        【报修评价成功】
-
-                        【评价信息】
-                        工单号：%s
-                        评分：%d分（%s）
-                        评价内容：%s
-
-                        感谢您的宝贵意见！
-                        我们将继续改进服务质量。
-                        """, repairId, rating, ratingText,
-                        comment != null ? comment : "未填写");
-            } else {
-                return "报修评价失败：" + root.path("msg").asText();
-            }
-
-        } catch (Exception e) {
-            log.error("评价报修失败: {}", e.getMessage());
-            return "评价报修失败，请稍后重试。";
         }
     }
 

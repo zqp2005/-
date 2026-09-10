@@ -9,9 +9,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * 社区信息工具类 —— 提供社区基本信息、设施、周边配套、门禁卡、便民服务等查询功能
  * 通过 Spring AI @Tool 注解注册为 AI 可调用的函数
@@ -117,7 +114,7 @@ public class CommunityTool {
                 - 监控系统：24小时运行
                 - 门禁系统：24小时运行
 
-                如需预约场地或了解更多设施使用规则，请告诉我。
+                如需了解更多设施使用规则，请告诉我。
                 """;
     }
 
@@ -165,91 +162,6 @@ public class CommunityTool {
         } catch (Exception e) {
             log.error("查询周边配套失败: {}", e.getMessage());
             return getDefaultNearbyInfo();
-        }
-    }
-
-    /**
-     * 预约社区设施
-     *
-     * @param facility 设施名称，如：篮球场、健身房
-     * @param date     预约日期，格式：yyyy-MM-dd
-     * @param timeSlot 时间段，如：14:00-16:00
-     * @return 预约结果文本
-     */
-    @Tool(description = "预约社区设施。用于回答'预约场地'、'预约设施'、'预定篮球场'等问题")
-    public String getFacilitiesReservation(
-            @ToolParam(description = "设施名称，如：篮球场、健身房") String facility,
-            @ToolParam(description = "预约日期，格式：yyyy-MM-dd") String date,
-            @ToolParam(description = "时间段，如：14:00-16:00") String timeSlot) {
-        log.info("预约设施 - facility: {}, date: {}, timeSlot: {}", facility, date, timeSlot);
-
-        if (facility == null || facility.isEmpty()) {
-            return "请提供要预约的设施名称。";
-        }
-        if (date == null || date.isEmpty()) {
-            return "请提供预约日期。";
-        }
-        if (timeSlot == null || timeSlot.isEmpty()) {
-            return "请提供预约时间段。";
-        }
-
-        try {
-            Map<String, Object> body = new HashMap<>();
-            body.put("facilityName", facility);
-            body.put("reservationDate", date);
-            body.put("timeSlot", timeSlot);
-            body.put("status", "Pending");
-
-            String result = communityClient.post("/system/facility/reserve", body);
-            JsonNode root = objectMapper.readTree(result);
-
-            if (root.path("code").asInt() == 200) {
-                return String.format("""
-                        【设施预约成功】
-
-                        【预约信息】
-                        设施：%s
-                        日期：%s
-                        时间：%s
-
-                        请按预约时间前往使用设施。
-                        如需取消或更改预约，请提前联系物业服务中心。
-                        """, facility, date, timeSlot);
-            } else {
-                return String.format("""
-                        【设施预约】
-
-                        您好！设施预约功能正在建设中，暂时无法在线预约。
-
-                        如需预约设施，请拨打服务热线：400-888-8888
-                        或前往物业服务中心（1号楼B1层）办理。
-
-                        预约信息：
-                        设施：%s
-                        日期：%s
-                        时间：%s
-
-                        我们将尽快完善在线预约功能，感谢您的理解！
-                        """, facility, date, timeSlot);
-            }
-
-        } catch (Exception e) {
-            log.error("预约设施失败: {}", e.getMessage());
-            return String.format("""
-                    【设施预约】
-
-                    您好！设施预约功能正在建设中，暂时无法在线预约。
-
-                    如需预约设施，请拨打服务热线：400-888-8888
-                    或前往物业服务中心（1号楼B1层）办理。
-
-                    预约信息：
-                    设施：%s
-                    日期：%s
-                    时间：%s
-
-                    我们将尽快完善在线预约功能，感谢您的理解！
-                    """, facility, date, timeSlot);
         }
     }
 
