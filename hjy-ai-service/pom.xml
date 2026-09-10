@@ -74,6 +74,12 @@
             <version>${spring-ai.version}</version>
         </dependency>
 
+        <!-- Spring AI MCP Client（WebFlux SSE 传输）：连接 hjy-mcp-server(8091) 获取上下文工具 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
+        </dependency>
+
         <!-- Spring Data Redis -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

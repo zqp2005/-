@@ -124,6 +124,7 @@ hjy-ai-service/
 - **Redis 会话持久化**：`RedisChatMemoryRepository` 将每个会话存为 Redis List（key 前缀 `ai:chat:memory:`），配合 `MessageWindowChatMemory` 保留最近 20 条消息，服务重启后历史不丢、多实例可共享
 - **Token 自动管理**：`HjyCommunityClient` 以管理员身份通过 `/aiLogin` 自动登录并缓存 JWT（25 分钟提前刷新）；请求遇到 401/403（含响应体业务码）时自动清缓存重登并重试一次
 - **SSE 流式输出**：流式接口逐段输出 `data: {...}\n\n`，正常结束以 `data: [DONE]` 标记收尾，前端据此结束加载状态
+- **MCP 远程工具**：通过 `spring-ai-starter-mcp-client-webflux` 以 SSE 连接 `hjy-mcp-server`（默认 `http://127.0.0.1:8091`，见 `spring.ai.mcp.client.sse.connections.hjy-context`），自动注册远程工具 `query_login_location`（登录地址定位）和 `query_weather`（高德天气），与本地六大工具同时生效
 
 ## 快速开始
 
@@ -133,6 +134,7 @@ hjy-ai-service/
 - Redis 6+
 - DeepSeek API Key
 - hjy-community 主后端运行中（默认 `http://localhost:8080`）
+- **hjy-mcp-server 先于本服务启动**（默认 `http://127.0.0.1:8091`）：MCP 客户端在启动时建立 SSE 连接，server 未启动会导致本服务启动失败（约 20 秒超时报错）。确认不需要 MCP 工具时，可设环境变量 `MCP_CLIENT_ENABLED=false` 跳过连接（本服务仍可正常启动，仅缺少登录定位/天气两个工具）
 
 ### 2. 配置
 

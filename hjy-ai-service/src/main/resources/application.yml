@@ -11,7 +11,7 @@ spring:
   config:
     import: optional:classpath:application-local.yml
 
-  # Spring AI DeepSeek 模型配置
+  # Spring AI DeepSeek 模型配置 + MCP 客户端配置
   ai:
     deepseek:
       api-key: ${DEEPSEEK_API_KEY}      # DeepSeek API 密钥，从环境变量读取
@@ -22,6 +22,23 @@ spring:
         options:
           model: deepseek-chat
           temperature: 0.7  # 生成温度，值越大输出越随机
+
+    # MCP 客户端：经 SSE 连接 hjy-mcp-server（登录地址定位、天气查询两个工具）
+    # 注意：需先启动 hjy-mcp-server(8091)，否则本服务启动时会因 SSE 连接失败而报错；
+    # 若确实不需要 MCP 工具，可将 MCP_CLIENT_ENABLED 环境变量设为 false 跳过连接
+    mcp:
+      client:
+        enabled: ${MCP_CLIENT_ENABLED:true}  # 是否启用 MCP 客户端（server 未启动时可置 false）
+        name: hjy-ai-service-mcp-client
+        request-timeout: 20s
+        type: SYNC
+        toolcallback:
+          enabled: true  # 将 MCP 工具自动注册为 ToolCallbackProvider Bean，供 ChatClient 使用
+        sse:
+          connections:
+            hjy-context:                       # 连接名（任意）
+              url: http://127.0.0.1:8091       # hjy-mcp-server 基础地址（不要带 /sse，端点会自动拼接）
+              sse-endpoint: /sse               # SSE 端点（与服务端 spring.ai.mcp.server.sse-endpoint 一致）
 
   # Redis 配置
   data:
