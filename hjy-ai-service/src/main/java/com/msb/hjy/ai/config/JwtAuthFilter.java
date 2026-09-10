@@ -58,6 +58,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 启动自检：密钥未配置时在日志中给出明确警告（此时所有 /ai 请求会被拒绝，
+     * 提示复制 src/main/resources/application-local.yml.template 并填入与主后端一致的密钥）
+     */
+    @jakarta.annotation.PostConstruct
+    public void warnIfSecretMissing() {
+        if (!StringUtils.hasText(tokenSecret)) {
+            log.warn("======== [AI服务鉴权] hjy.ai.auth.token-secret 未配置！所有 /ai 对话请求将被 401 拒绝。"
+                    + " 请复制 application-local.yml.template 为 application-local.yml，"
+                    + "填入与 hjy-community 相同的 JWT 密钥（TOKEN_SECRET）后重启 ========");
+        }
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {

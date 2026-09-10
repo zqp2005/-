@@ -7,8 +7,9 @@ spring:
     name: hjy-ai-service  # 应用名称，用于服务注册与发现
 
   # 本地敏感配置（JWT 密钥等），文件可选：不存在时不影响启动，真实值不进仓库
+  # classpath 方式与 hjy-community 一致，不受启动工作目录影响
   config:
-    import: optional:file:./application-local.yml
+    import: optional:classpath:application-local.yml
 
   # Spring AI DeepSeek 模型配置
   ai:
