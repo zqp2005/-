@@ -1,6 +1,6 @@
 # 合家云社区 AI 智能服务
 
-基于 Spring AI 实现的社区物业智能助手服务。
+基于 Spring AI 实现的社区物业智能助手服务，通过工具调用（Function Calling）对接 `hjy-community` 主后端获取真实业务数据，为业主提供智能客服对话。
 
 ## 技术栈
 
@@ -8,11 +8,10 @@
 |------|------|
 | Java 17 | 基础语言 |
 | Spring Boot 3.2.5 | 基础框架 |
-| Spring AI 1.0.0 | AI大模型集成框架 |
-| DeepSeek | 大语言模型 |
-| Spring WebFlux | 支持流式输出 |
-| Redis | 会话/对话历史存储 |
-| MySQL | 知识库存储 |
+| Spring AI 1.0.0 | AI大模型集成框架（DeepSeek Starter） |
+| DeepSeek | 大语言模型（deepseek-chat） |
+| Spring WebFlux | 支持流式输出（SSE） |
+| Redis | 会话记忆持久化存储 |
 | Lombok | 简化代码 |
 
 ## 项目结构
@@ -22,48 +21,53 @@ hjy-ai-service/
 ├── src/main/java/com/msb/hjy/ai/
 │   ├── HjyAiApplication.java          # 启动类
 │   ├── config/                         # 配置类
-│   │   ├── AiConfig.java               # AI配置
-│   │   ├── ChatConfig.java             # 对话配置
+│   │   ├── AiConfig.java               # AI配置（RestTemplate 等）
+│   │   ├── AiProperties.java           # hjy.ai.* 配置属性映射
+│   │   ├── ChatClientConfig.java       # ChatClient/ChatMemory Bean + 系统提示词加载
+│   │   ├── RedisChatMemoryRepository.java  # 会话记忆 Redis 存储
 │   │   ├── RedisConfig.java            # Redis配置
 │   │   └── WebConfig.java              # Web配置
 │   ├── controller/                     # 控制器层
-│   │   ├── ChatController.java         # 对话API
-│   │   └── KnowledgeController.java    # 知识库API
+│   │   └── ChatController.java         # 对话API（同步/流式/清会话/健康检查）
 │   ├── service/                        # 服务层
-│   │   ├── ChatService.java
-│   │   └── KnowledgeService.java
+│   │   ├── ChatService.java            # 对话服务接口
+│   │   └── impl/ChatServiceImpl.java   # 对话实现（含问候/帮助拦截）
 │   ├── client/                         # HTTP客户端
-│   │   └── HjyCommunityClient.java     # 调用社区系统API
-│   ├── agent/                          # AI智能体
-│   │   ├── HjyAgent.java               # 智能体定义
-│   │   ├── ToolExecutor.java           # 工具执行器
-│   │   └── SystemPrompt.java           # 系统提示词
-│   ├── tools/                          # 工具集
+│   │   └── HjyCommunityClient.java     # 调用社区系统API（自动登录 + 401重试）
+│   ├── tools/                          # 工具集（@Tool 注解，由 AI 自动调用）
 │   │   ├── RepairTool.java             # 报修工具
 │   │   ├── ComplaintTool.java          # 投诉工具
 │   │   ├── PropertyFeeTool.java        # 物业费工具
 │   │   ├── OwnerInfoTool.java          # 业主信息工具
 │   │   ├── AnnouncementTool.java       # 公告工具
 │   │   └── CommunityTool.java          # 社区信息工具
+│   ├── prompt/                         # 提示词模板
+│   │   └── PromptTemplate.java         # 问候语/帮助信息等常量模板
 │   ├── dto/                            # 数据传输对象
-│   ├── common/                         # 公共模块
-│   └── knowledge/                      # 知识库模块
+│   │   ├── ChatRequest.java
+│   │   └── ChatResponse.java
+│   └── common/                         # 公共模块
+│       ├── constant/                   # 常量（AiConstants、RedisKeys）
+│       ├── exception/                  # 全局异常处理
+│       └── result/                     # 统一响应封装 Result
 └── src/main/resources/
-    └── application.yml                 # 配置文件
+    ├── application.yml                 # 配置文件
+    └── prompt/system-prompt.txt        # 系统提示词（外置文件）
 ```
 
 ## 角色
 
 目前只有 **1个角色**：AI物业客服助手"小合"
 
-系统通过统一的 System Prompt 定义角色行为，没有多角色设计。
+系统提示词外置于 `src/main/resources/prompt/system-prompt.txt`，由 `ChatClientConfig` 启动时加载，强制 AI 在物业相关问题上必须调用工具获取真实数据（避免幻觉）。没有多角色设计。
 
 ## 功能特性
 
 ### 1. 智能客服
 - 7x24小时在线服务
-- 自然语言对话交互
-- 多轮对话上下文理解
+- 自然语言对话交互（同步 + SSE 流式打字机效果）
+- 多轮对话上下文理解（Redis 会话记忆）
+- 问候语 / "帮助" 等常见指令本地拦截，无需调用大模型
 
 ### 2. 智能工具调用（6大类28个工具）
 
@@ -71,9 +75,9 @@ hjy-ai-service/
 |------|------|
 | **报修服务** | 查询进度、提交报修、详情查询、取消工单、评价 |
 | **投诉建议** | 查询进度、提交投诉、详情查询、评价 |
-| **物业缴费** | 查询账单、缴费指南、历史记录、欠费查询 |
-| **业主服务** | 业主信息、车辆信息、家庭成员、访客登记 |
-| **社区信息** | 社区基本信息、设施查询、周边配套、预约场地、便民服务 |
+| **物业缴费** | 查询账单、缴费指南、历史记录、欠费查询、费用试算 |
+| **业主服务** | 业主信息、车辆信息、家庭成员、访客查询、访客登记 |
+| **社区信息** | 社区基本信息、设施查询、周边配套、预约场地、门禁卡、便民服务 |
 | **公告活动** | 公告列表、详情查询、社区活动 |
 
 ### 3. 可回答的问题示例
@@ -114,9 +118,12 @@ hjy-ai-service/
 - 公告、通知、最新消息
 - 社区活动
 
-### 4. 知识库问答
-- 基于 RAG 的知识检索
-- 物业条例、常见问题、规章制度
+### 4. 核心机制
+
+- **系统提示词外置**：提示词文本在 `resources/prompt/system-prompt.txt`，修改提示词无需改代码
+- **Redis 会话持久化**：`RedisChatMemoryRepository` 将每个会话存为 Redis List（key 前缀 `ai:chat:memory:`），配合 `MessageWindowChatMemory` 保留最近 20 条消息，服务重启后历史不丢、多实例可共享
+- **Token 自动管理**：`HjyCommunityClient` 以管理员身份通过 `/aiLogin` 自动登录并缓存 JWT（25 分钟提前刷新）；请求遇到 401/403（含响应体业务码）时自动清缓存重登并重试一次
+- **SSE 流式输出**：流式接口逐段输出 `data: {...}\n\n`，正常结束以 `data: [DONE]` 标记收尾，前端据此结束加载状态
 
 ## 快速开始
 
@@ -125,16 +132,21 @@ hjy-ai-service/
 - Maven 3.8+
 - Redis 6+
 - DeepSeek API Key
+- hjy-community 主后端运行中（默认 `http://localhost:8080`）
 
 ### 2. 配置
 
-编辑 `application.yml`：
+API Key 通过环境变量注入：
 
-```yaml
-hjy:
-  ai:
-    api-key: your-deepseek-api-key
-    model: deepseek-chat
+```bash
+export DEEPSEEK_API_KEY=your-deepseek-api-key
+```
+
+可选环境变量（覆盖 `application.yml` 中的默认值 admin/admin123）：
+
+```bash
+export HJY_COMMUNITY_ADMIN_USER=admin
+export HJY_COMMUNITY_ADMIN_PASSWORD=admin123
 ```
 
 ### 3. 启动
@@ -158,7 +170,16 @@ docker run -d -p 8090:8090 \
 
 ## API 文档
 
-### 对话接口
+### 接口列表
+
+| 接口 | 方法 | 路径 | 说明 |
+|------|------|------|------|
+| 同步对话 | POST | `/ai/chat` | 返回完整回复（Result\<ChatResponse\>） |
+| 流式对话 | POST | `/ai/chat/stream` | SSE 逐段输出，以 `data: [DONE]` 结束 |
+| 清除会话 | DELETE | `/ai/session/{sessionId}` | 清空该会话的 Redis 记忆 |
+| 健康检查 | GET | `/ai/health` | 服务存活探测 |
+
+### 请求示例
 
 ```http
 POST /ai/chat
@@ -173,38 +194,22 @@ Content-Type: application/json
 }
 ```
 
-### 知识库管理
+其中 `sessionId`、`message` 必填；`agentType` 默认 `customer_service`；`userId`/`userName` 用于让 AI 识别用户身份。
 
-```http
-# 添加知识
-POST /ai/knowledge
+### 流式响应格式
 
-# 搜索知识
-GET /ai/knowledge/search?query=物业费标准&category=faq
+```
+data: 您好
 
-# 重建索引
-POST /ai/knowledge/rebuild/{category}
+data: ，为您查询到以下账单...
+
+data: [DONE]
 ```
 
-## 对接现有系统
+## 与其他系统的对接
 
-在 `hjy-community` 项目中添加 AI 服务调用：
-
-```java
-@RestController
-@RequestMapping("/ai")
-public class AiIntegrationController {
-
-    private final RestTemplate restTemplate;
-    private final String aiServiceUrl = "http://127.0.0.1:8090";
-
-    @PostMapping("/chat")
-    public Result<ChatResponse> chat(@RequestBody ChatRequest request) {
-        String url = aiServiceUrl + "/ai/chat";
-        return restTemplate.postForObject(url, request, Result.class);
-    }
-}
-```
+- **前端 → 本服务**：前端开发服务器将 `/ai/*` 代理到本服务（8090），前端直接调用上述对话接口。
+- **本服务 → hjy-community**：`HjyCommunityClient` 以管理员身份调用主后端 `/aiLogin` 获取 JWT（免验证码），缓存后代理所有业务请求（报修、投诉、缴费、公告等），token 失效自动重登重试。
 
 ## 工具说明
 
@@ -268,8 +273,9 @@ public class AiIntegrationController {
 | hjy.ai.temperature | 温度参数 | 0.7 |
 | hjy.ai.maxTokens | 最大令牌数 | 2000 |
 | hjy.ai.hjy-community.base-url | 社区系统地址 | http://localhost:8080 |
-| hjy.ai.hjy-community.admin-username | 管理员用户名 | admin |
-| hjy.ai.hjy-community.admin-password | 管理员密码 | admin123 |
+| hjy.ai.hjy-community.admin-username | 管理员用户名 | admin（可用环境变量 HJY_COMMUNITY_ADMIN_USER 覆盖） |
+| hjy.ai.hjy-community.admin-password | 管理员密码 | admin123（可用环境变量 HJY_COMMUNITY_ADMIN_PASSWORD 覆盖） |
+| hjy.ai.hjy-community.api-token | 固定 API Token（配置后优先使用，跳过自动登录） | 空 |
 
 ## 常见问题
 
@@ -279,8 +285,11 @@ A: 修改 `application.yml` 中的 `hjy.ai.model` 配置项。
 ### Q: 支持哪些AI模型？
 A: DeepSeek 系列（deepseek-chat, deepseek-coder 等）
 
-### Q: 如何接入现有数据库？
-A: 在工具类中调用现有系统的 REST API 或直接操作数据库。
+### Q: 如何修改小合的角色设定/回复风格？
+A: 编辑 `src/main/resources/prompt/system-prompt.txt` 后重启服务。
+
+### Q: 会话历史存在哪里？
+A: Redis（key 前缀 `ai:chat:memory:`），每个会话一个 List，保留最近 20 条消息，重启不丢失。
 
 ## License
 
