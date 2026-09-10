@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 投诉建议Controller
@@ -69,5 +70,33 @@ public class HjySuggestController extends BaseController {
     @PreAuthorize("@pe.hasPerms('system:suggest:remove')")
     public BaseResponse remove(@PathVariable Long[] complaintSuggestIds) {
         return toAjax(suggestService.deleteSuggestByIds(complaintSuggestIds));
+    }
+
+    /**
+     * 受理：待受理 -> 处理中
+     */
+    @PutMapping("/accept/{complaintSuggestId}")
+    @PreAuthorize("@pe.hasPerms('system:suggest:accept')")
+    public BaseResponse accept(@PathVariable Long complaintSuggestId) {
+        return toAjax(suggestService.acceptSuggest(complaintSuggestId));
+    }
+
+    /**
+     * 回复：处理中 -> 已回复
+     */
+    @PutMapping("/reply/{complaintSuggestId}")
+    @PreAuthorize("@pe.hasPerms('system:suggest:reply')")
+    public BaseResponse reply(@PathVariable Long complaintSuggestId, @RequestBody Map<String, Object> params) {
+        return toAjax(suggestService.replySuggest(complaintSuggestId, params.get("replyContent").toString()));
+    }
+
+    /**
+     * 关闭：待受理/已回复 -> 已关闭
+     */
+    @PutMapping("/close/{complaintSuggestId}")
+    @PreAuthorize("@pe.hasPerms('system:suggest:close')")
+    public BaseResponse close(@PathVariable Long complaintSuggestId, @RequestBody Map<String, Object> params) {
+        String reason = params.get("reason") == null ? "" : params.get("reason").toString();
+        return toAjax(suggestService.closeSuggest(complaintSuggestId, reason));
     }
 }

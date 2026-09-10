@@ -11,6 +11,10 @@
         <result property="ownerRealName"           column="owner_real_name"         />
         <result property="ownerPhoneNumber"         column="owner_phone_number"       />
         <result property="urlList"                column="url_list"                />
+        <result property="complaintState"        column="complaint_state"     />
+        <result property="handleBy"              column="handle_by"           />
+        <result property="handleTime"            column="handle_time"         />
+        <result property="replyContent"          column="reply_content"       />
         <result property="createBy"              column="create_by"               />
         <result property="createTime"            column="create_time"             />
         <result property="updateBy"              column="update_by"               />
@@ -21,6 +25,7 @@
     <sql id="selectSuggestVo">
         SELECT complaint_suggest_id, complaint_suggest_type, complaint_suggest_content,
                owner_real_name, owner_phone_number, url_list,
+               complaint_state, handle_by, handle_time, reply_content,
                create_by, create_time, update_by, update_time, remark
         FROM hjy_suggest
     </sql>
@@ -30,6 +35,9 @@
         WHERE 1=1
         <if test="complaintSuggestType != null and complaintSuggestType != ''">
             AND complaint_suggest_type = #{complaintSuggestType}
+        </if>
+        <if test="complaintState != null and complaintState != ''">
+            AND complaint_state = #{complaintState}
         </if>
         <if test="ownerRealName != null and ownerRealName != ''">
             AND owner_real_name LIKE CONCAT('%', #{ownerRealName}, '%')
@@ -53,6 +61,10 @@
             <if test="ownerRealName != null and ownerRealName != ''">owner_real_name,</if>
             <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number,</if>
             <if test="urlList != null and urlList != ''">url_list,</if>
+            <if test="complaintState != null and complaintState != ''">complaint_state,</if>
+            <if test="handleBy != null and handleBy != ''">handle_by,</if>
+            <if test="handleTime != null">handle_time,</if>
+            <if test="replyContent != null and replyContent != ''">reply_content,</if>
             <if test="createBy != null and createBy != ''">create_by,</if>
             <if test="remark != null and remark != ''">remark,</if>
             create_time
@@ -63,6 +75,10 @@
             <if test="ownerRealName != null and ownerRealName != ''">#{ownerRealName},</if>
             <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">#{ownerPhoneNumber},</if>
             <if test="urlList != null and urlList != ''">#{urlList},</if>
+            <if test="complaintState != null and complaintState != ''">#{complaintState},</if>
+            <if test="handleBy != null and handleBy != ''">#{handleBy},</if>
+            <if test="handleTime != null">#{handleTime},</if>
+            <if test="replyContent != null and replyContent != ''">#{replyContent},</if>
             <if test="createBy != null and createBy != ''">#{createBy},</if>
             <if test="remark != null and remark != ''">#{remark},</if>
             NOW()
@@ -77,6 +93,10 @@
             <if test="ownerRealName != null and ownerRealName != ''">owner_real_name = #{ownerRealName},</if>
             <if test="ownerPhoneNumber != null and ownerPhoneNumber != ''">owner_phone_number = #{ownerPhoneNumber},</if>
             <if test="urlList != null and urlList != ''">url_list = #{urlList},</if>
+            <if test="complaintState != null and complaintState != ''">complaint_state = #{complaintState},</if>
+            <if test="handleBy != null and handleBy != ''">handle_by = #{handleBy},</if>
+            <if test="handleTime != null">handle_time = #{handleTime},</if>
+            <if test="replyContent != null and replyContent != ''">reply_content = #{replyContent},</if>
             <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
             <if test="remark != null">remark = #{remark},</if>
             update_time = NOW()

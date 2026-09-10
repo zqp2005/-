@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.msb.hjycommunity.common.core.domain.BaseEntity;
 
+import java.util.Date;
+
 /**
  * 投诉建议对象 hjy_suggest
  */
@@ -30,6 +32,18 @@ public class HjySuggest extends BaseEntity {
 
     /** 图片JSON数组 */
     private String urlList;
+
+    /** 投诉状态 */
+    private String complaintState;
+
+    /** 处理人 */
+    private String handleBy;
+
+    /** 处理时间 */
+    private Date handleTime;
+
+    /** 回复内容 */
+    private String replyContent;
 
     public Long getComplaintSuggestId() {
         return complaintSuggestId;
@@ -77,6 +91,38 @@ public class HjySuggest extends BaseEntity {
 
     public void setUrlList(String urlList) {
         this.urlList = urlList;
+    }
+
+    public String getComplaintState() {
+        return complaintState;
+    }
+
+    public void setComplaintState(String complaintState) {
+        this.complaintState = complaintState;
+    }
+
+    public String getHandleBy() {
+        return handleBy;
+    }
+
+    public void setHandleBy(String handleBy) {
+        this.handleBy = handleBy;
+    }
+
+    public Date getHandleTime() {
+        return handleTime;
+    }
+
+    public void setHandleTime(Date handleTime) {
+        this.handleTime = handleTime;
+    }
+
+    public String getReplyContent() {
+        return replyContent;
+    }
+
+    public void setReplyContent(String replyContent) {
+        this.replyContent = replyContent;
     }
 
     @Override

@@ -38,4 +38,13 @@ public interface HjySuggestService {
      * 批量删除投诉建议
      */
     int deleteSuggestByIds(Long[] complaintSuggestIds);
+
+    /** 受理：Pending -> Processing，记录处理人与时间 */
+    int acceptSuggest(Long complaintSuggestId);
+
+    /** 回复：Processing -> Replied，记录回复内容 */
+    int replySuggest(Long complaintSuggestId, String replyContent);
+
+    /** 关闭：Pending/Replied -> Closed，Pending 直接关闭需填原因 */
+    int closeSuggest(Long complaintSuggestId, String reason);
 }
