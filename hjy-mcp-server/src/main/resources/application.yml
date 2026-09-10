@@ -1,0 +1,39 @@
+# MCP 工具服务端口（hjy-ai-service 通过 SSE 连接 http://127.0.0.1:8091/sse）
+server:
+  port: 8091
+
+spring:
+  application:
+    name: hjy-mcp-server
+
+  # 数据源：与 hjy-community / hjy-ai-service 共享同一 MySQL 库
+  # 真实账号密码在 application-local.yml（被 .gitignore 排除）中通过占位符变量提供
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/hehjiayun_community?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=GMT%2B8
+    username: ${MYSQL_USERNAME}
+    password: ${MYSQL_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Spring AI MCP Server 配置：默认暴露 SSE 端点 /sse，消息端点 /mcp/message
+  ai:
+    mcp:
+      server:
+        name: hjy-context-server
+        version: 1.0.0
+
+  # 本地敏感配置（MySQL 账号密码、高德Key等），文件可选：不存在时不影响启动
+  config:
+    import: optional:classpath:application-local.yml
+
+# 高德 Web 服务 Key（IP定位 + 天气查询），未配置时工具返回明确提示
+hjy:
+  mcp:
+    amap-key: ${AMAP_KEY:}
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.msb.hjy.mcp: DEBUG
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n'

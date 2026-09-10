@@ -1,0 +1,14 @@
+# application-local.yml 模板 —— 复制本文件为 application-local.yml 并填入真实值
+# 复制命令（在 hjy-mcp-server/src/main/resources 目录下）：
+#   cp application-local.yml.template application-local.yml
+# application-local.yml 已被根 .gitignore 排除，不会提交推送
+
+# MySQL 账号（与 hjy-community 的 application-local.yml 保持一致）
+MYSQL_USERNAME: 你的MySQL账号
+
+# MySQL 密码
+MYSQL_PASSWORD: 你的MySQL密码
+
+# 高德 Web 服务 Key（https://console.amap.com 创建"Web服务"类型应用获取）
+# 用于 query_login_location 的公网IP定位 与 query_weather 的天气查询；留空时工具返回"高德Key未配置"提示
+AMAP_KEY: 你的高德Web服务Key
