@@ -151,4 +151,8 @@
         ORDER BY create_time DESC
     </select>
 
+    <select id="countActiveBindingByRoom" parameterType="Long" resultType="long">
+        SELECT COUNT(*) FROM hjy_owner_room WHERE room_id = #{roomId} AND room_status != 'Rejected'
+    </select>
+
 </mapper>

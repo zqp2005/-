@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyUnit;
 import com.msb.hjycommunity.property.domain.vo.HjyUnitVo;
@@ -47,12 +48,22 @@ public class HjyUnitServiceImpl implements HjyUnitService {
     @Override
     @Transactional
     public int deleteUnitById(Long unitId) {
-        return unitMapper.deleteUnitById(unitId);
+        // 委托批量删除，复用级联删除校验
+        return deleteUnitByIds(new Long[]{unitId});
     }
 
     @Override
     @Transactional
     public int deleteUnitByIds(Long[] unitIds) {
+        // 级联删除校验：单元下存在房间则整批拒绝删除
+        for (Long unitId : unitIds) {
+            long roomCount = unitMapper.countRoomByUnit(unitId);
+            if (roomCount > 0) {
+                HjyUnit unit = unitMapper.selectUnitById(unitId);
+                throw new CustomException(500, String.format("单元[%s]下存在 %d 个房间，无法删除",
+                        unit != null ? unit.getUnitName() : unitId, roomCount));
+            }
+        }
         return unitMapper.deleteUnitByIds(unitIds);
     }
 

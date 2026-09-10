@@ -1,6 +1,7 @@
 package com.msb.hjycommunity.community.service.impl;
 
 //import com.msb.hjycommunity.common.utils.OrikaUtils;
+import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.OrikaUtils;
 import com.msb.hjycommunity.community.domain.vo.HjyCommunityVo;
 import com.msb.hjycommunity.community.service.HjyCommunityService;
@@ -9,6 +10,7 @@ import com.msb.hjycommunity.community.domain.dto.HjyCommunityDto;
 //import com.msb.hjycommunity.community.domain.vo.HjyCommunityVo;
 import com.msb.hjycommunity.community.mapper.HjyCommunityMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
@@ -53,8 +55,17 @@ public class HjyCommunityServiceImpl implements HjyCommunityService {
     }
 
     @Override
+    @Transactional
     public int deleteHjyCommunity(Long[] communityIds) {
-
+        // 级联删除校验：小区下存在楼栋则整批拒绝删除
+        for (Long communityId : communityIds) {
+            long buildingCount = hjyCommunityMapper.countBuildingByCommunity(communityId);
+            if (buildingCount > 0) {
+                HjyCommunity community = hjyCommunityMapper.selectById(communityId);
+                throw new CustomException(500, String.format("小区[%s]下存在 %d 栋楼栋，无法删除",
+                        community != null ? community.getCommunityName() : communityId, buildingCount));
+            }
+        }
         return hjyCommunityMapper.deleteBatchIds(Arrays.asList(communityIds));
     }
 

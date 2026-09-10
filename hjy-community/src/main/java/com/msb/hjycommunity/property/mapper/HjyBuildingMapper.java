@@ -46,4 +46,9 @@ public interface HjyBuildingMapper extends BaseMapper<HjyBuilding> {
      * 查询楼栋下拉列表
      */
     List<HjyBuildingVo> selectBuildingPullDown(@Param("communityId") Long communityId);
+
+    /**
+     * 统计楼栋下的单元数量（级联删除校验用）
+     */
+    long countUnitByBuilding(Long buildingId);
 }

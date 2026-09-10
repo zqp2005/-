@@ -46,4 +46,9 @@ public interface HjyUnitMapper extends BaseMapper<HjyUnit> {
      * 查询单元下拉列表
      */
     List<HjyUnitVo> selectUnitPullDown(@Param("buildingId") Long buildingId);
+
+    /**
+     * 统计单元下的房间数量（级联删除校验用）
+     */
+    long countRoomByUnit(Long unitId);
 }

@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyOwner;
 import com.msb.hjycommunity.property.mapper.HjyOwnerMapper;
@@ -46,12 +47,22 @@ public class HjyOwnerServiceImpl implements HjyOwnerService {
     @Override
     @Transactional
     public int deleteOwnerById(Long ownerId) {
-        return ownerMapper.deleteOwnerById(ownerId);
+        // 委托批量删除，复用级联删除校验
+        return deleteOwnerByIds(new Long[]{ownerId});
     }
 
     @Override
     @Transactional
     public int deleteOwnerByIds(Long[] ownerIds) {
+        // 级联删除校验：业主名下存在有效房屋绑定（已驳回的除外）则整批拒绝删除
+        for (Long ownerId : ownerIds) {
+            long bindingCount = ownerMapper.countActiveBindingByOwner(ownerId);
+            if (bindingCount > 0) {
+                HjyOwner owner = ownerMapper.selectOwnerById(ownerId);
+                throw new CustomException(500, String.format("业主[%s]名下存在 %d 条房屋绑定，无法删除，请先解绑",
+                        owner != null ? owner.getOwnerRealName() : ownerId, bindingCount));
+            }
+        }
         return ownerMapper.deleteOwnerByIds(ownerIds);
     }
 

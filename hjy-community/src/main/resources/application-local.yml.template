@@ -1,0 +1,7 @@
+# application-local.yml 模板 —— 复制本文件为 application-local.yml 并填入真实值
+# 复制命令（在 hjy-community 目录下）：cp src/main/resources/application-local.yml.template src/main/resources/application-local.yml
+# application-local.yml 已被 .gitignore 排除，不会提交推送
+
+MYSQL_USERNAME: root
+MYSQL_PASSWORD: 你的数据库密码
+TOKEN_SECRET: 你的JWT签名密钥

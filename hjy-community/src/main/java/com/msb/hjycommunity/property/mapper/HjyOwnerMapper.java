@@ -45,4 +45,9 @@ public interface HjyOwnerMapper extends BaseMapper<HjyOwner> {
      * 根据手机号查询业主
      */
     HjyOwner selectOwnerByPhone(@Param("ownerPhoneNumber") String ownerPhoneNumber);
+
+    /**
+     * 统计业主名下的有效房屋绑定数量，已驳回的不算（级联删除校验用）
+     */
+    long countActiveBindingByOwner(Long ownerId);
 }

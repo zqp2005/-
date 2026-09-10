@@ -46,4 +46,9 @@ public interface HjyRoomMapper extends BaseMapper<HjyRoom> {
      * 查询房间下拉列表
      */
     List<HjyRoomVo> selectRoomPullDown(@Param("unitId") Long unitId);
+
+    /**
+     * 统计房间的有效业主绑定数量，已驳回的不算（级联删除校验用）
+     */
+    long countActiveBindingByRoom(Long roomId);
 }

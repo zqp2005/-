@@ -29,4 +29,10 @@ public interface HjyCommunityMapper extends BaseMapper<HjyCommunity> {
             "</script>")
 
 List<HjyCommunityDto> queryList(HjyCommunity hjyCommunity);
+
+    /**
+     * 统计小区下的楼栋数量（级联删除校验用）
+     */
+    @Select("SELECT COUNT(*) FROM hjy_building WHERE community_id = #{communityId}")
+    long countBuildingByCommunity(Long communityId);
 }

@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyBuilding;
 import com.msb.hjycommunity.property.domain.vo.HjyBuildingVo;
@@ -48,12 +49,22 @@ public class HjyBuildingServiceImpl implements HjyBuildingService {
     @Override
     @Transactional
     public int deleteBuildingById(Long buildingId) {
-        return buildingMapper.deleteBuildingById(buildingId);
+        // 委托批量删除，复用级联删除校验
+        return deleteBuildingByIds(new Long[]{buildingId});
     }
 
     @Override
     @Transactional
     public int deleteBuildingByIds(Long[] buildingIds) {
+        // 级联删除校验：楼栋下存在单元则整批拒绝删除
+        for (Long buildingId : buildingIds) {
+            long unitCount = buildingMapper.countUnitByBuilding(buildingId);
+            if (unitCount > 0) {
+                HjyBuilding building = buildingMapper.selectBuildingById(buildingId);
+                throw new CustomException(500, String.format("楼栋[%s]下存在 %d 个单元，无法删除",
+                        building != null ? building.getBuildingName() : buildingId, unitCount));
+            }
+        }
         return buildingMapper.deleteBuildingByIds(buildingIds);
     }
 

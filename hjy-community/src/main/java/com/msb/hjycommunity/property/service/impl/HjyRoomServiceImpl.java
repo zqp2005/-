@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyRoom;
 import com.msb.hjycommunity.property.domain.vo.HjyRoomVo;
@@ -47,12 +48,22 @@ public class HjyRoomServiceImpl implements HjyRoomService {
     @Override
     @Transactional
     public int deleteRoomById(Long roomId) {
-        return roomMapper.deleteRoomById(roomId);
+        // 委托批量删除，复用级联删除校验
+        return deleteRoomByIds(new Long[]{roomId});
     }
 
     @Override
     @Transactional
     public int deleteRoomByIds(Long[] roomIds) {
+        // 级联删除校验：房间存在有效业主绑定（已驳回的除外）则整批拒绝删除
+        for (Long roomId : roomIds) {
+            long bindingCount = roomMapper.countActiveBindingByRoom(roomId);
+            if (bindingCount > 0) {
+                HjyRoom room = roomMapper.selectRoomById(roomId);
+                throw new CustomException(500, String.format("房间[%s]存在 %d 条业主绑定关系，无法删除，请先解绑",
+                        room != null ? room.getRoomName() : roomId, bindingCount));
+            }
+        }
         return roomMapper.deleteRoomByIds(roomIds);
     }
 
