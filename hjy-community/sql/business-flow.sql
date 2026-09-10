@@ -79,3 +79,10 @@ ALTER TABLE hjy_repair
 
 -- 6) 修复：报修管理目录(2067)与报修信息菜单(2061)此前 visible=1（隐藏），恢复显示
 UPDATE sys_menu SET visible = '0' WHERE menu_id IN (2067, 2061);
+
+-- 7) 投诉状态 Replied 显示名调整：已回复 -> 已处理（贴合办结语义，存储值不变）
+UPDATE sys_dict_data SET dict_label = '已处理' WHERE dict_type = 'hjy_complaint_state' AND dict_value = 'Replied';
+
+-- 8) 普通角色(common)收窄为只读：移除全部写操作按钮权限，仅保留 query/list/export
+DELETE rm FROM sys_role_menu rm JOIN sys_menu m ON rm.menu_id = m.menu_id
+WHERE rm.role_id = 2 AND m.menu_type = 'F' AND m.perms NOT REGEXP ':(query|list|export)$';
