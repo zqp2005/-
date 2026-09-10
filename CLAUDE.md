@@ -12,6 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 hjy/
 ├── hjy-community/       # 主物业管理后端 (Spring Boot 2.7.8, Java 8)
 ├── hjy-ai-service/       # AI 智能助手服务 (Spring Boot 3.2.5, Java 17)
+├── hjy-mcp-server/       # MCP 工具服务 (Spring Boot 3.2.5, Java 17, 端口 8091：登录地址定位 + 高德天气)
 ├── generate-pptx.js      # 辅助脚本：生成项目介绍 PPT（根目录 package.json 是它的依赖，与主项目无关）
 └── AGENTS.md             # 内容与本文件基本同步（供 Codex 使用）
 
@@ -36,6 +37,13 @@ mvn clean package -DskipTests          # 构建
 mvn spring-boot:run                    # 运行（端口 8090）
 ```
 需要环境变量 `DEEPSEEK_API_KEY`。连接主后端的管理员凭据默认 admin/admin123，可用 `HJY_COMMUNITY_ADMIN_USER` / `HJY_COMMUNITY_ADMIN_PASSWORD` 覆盖（见 `application.yml` 中 `hjy.ai.hjy-community.*`）。Docker 部署：`docker build -t hjy-ai-service .`。
+
+### hjy-mcp-server（MCP 工具服务）
+```bash
+cd hjy-mcp-server
+mvn spring-boot:run                    # 运行（端口 8091，需在 hjy-ai-service 之前启动）
+```
+MCP Server，经 SSE 向 AI 服务提供两个工具（登录地址定位、高德天气）。高德 Key 配在 `src/main/resources/application-local.yml`（`AMAP_KEY`，模板见同目录 .template）。AI 服务启动时会连接本服务，连不上则启动失败；不需要 MCP 工具时可设环境变量 `MCP_CLIENT_ENABLED=false` 让 AI 服务跳过连接。
 
 ### hejiayun_ui（前端，位于仓库外）
 ```bash
