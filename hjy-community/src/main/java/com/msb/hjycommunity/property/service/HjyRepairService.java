@@ -38,4 +38,19 @@ public interface HjyRepairService {
      * 批量删除报修
      */
     int deleteRepairByIds(Long[] repairIds);
+
+    /** 派单：Pending -> Allocated，记录派单时间与维修人 */
+    int assignRepair(Long repairId, Long assignmentId);
+
+    /** 接单：Allocated -> Processing，记录接单时间 */
+    int receiveRepair(Long repairId);
+
+    /** 完成：Processing -> Processed，记录完成时间与完成人 */
+    int completeRepair(Long repairId);
+
+    /** 取消：Pending/Allocated -> Cancelled，记录取消时间与原因 */
+    int cancelRepair(Long repairId, String reason);
+
+    /** 不处理：Pending -> No_Processed，记录原因 */
+    int rejectRepair(Long repairId, String reason);
 }
