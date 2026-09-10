@@ -1,0 +1,22 @@
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Node
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven
+target/
+
+# Local secrets (real credentials) — never commit
+application-local.yml
+
+# PPT generation scripts
+generate-pptx.js
