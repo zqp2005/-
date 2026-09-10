@@ -72,7 +72,7 @@ public class ChatServiceImpl implements ChatService {
 
             String response = chatClient.prompt()
                     .user(userMessage)
-                    .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.getSessionId()))
+                    .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId(request)))
                     .call()
                     .content();
 
@@ -103,7 +103,7 @@ public class ChatServiceImpl implements ChatService {
 
         return chatClient.prompt()
                 .user(buildUserMessage(request))
-                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, request.getSessionId()))
+                .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId(request)))
                 .stream()
                 .content()
                 .map(content -> "data: " + content + "\n\n")
@@ -128,5 +128,14 @@ public class ChatServiceImpl implements ChatService {
                 request.getDisplayName(),
                 request.getUserId() != null ? request.getUserId() : "游客",
                 request.getMessage());
+    }
+
+    /**
+     * 会话 key = userId:sessionId，把不同用户的会话历史隔离开，
+     * 避免仅按前端传来的 sessionId 区分时出现记忆串台。
+     * userId 由 JwtAuthFilter 校验 JWT 后写入请求（见 ChatController#fillUserIdentity）。
+     */
+    private String conversationId(ChatRequest request) {
+        return request.getUserId() + ":" + request.getSessionId();
     }
 }

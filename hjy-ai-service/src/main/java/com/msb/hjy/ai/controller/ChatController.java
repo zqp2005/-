@@ -1,9 +1,11 @@
 package com.msb.hjy.ai.controller;
 
 import com.msb.hjy.ai.common.result.Result;
+import com.msb.hjy.ai.config.JwtAuthFilter;
 import com.msb.hjy.ai.dto.ChatRequest;
 import com.msb.hjy.ai.dto.ChatResponse;
 import com.msb.hjy.ai.service.ChatService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -39,12 +41,14 @@ public class ChatController {
      * AI 会根据意图自动调用相应工具获取真实数据。
      *
      * @param request 聊天请求体（含 sessionId 和 message）
+     * @param servletRequest servlet 请求，携带鉴权过滤器写入的用户身份
      * @return 统一响应，data 中携带 ChatResponse
      */
     @PostMapping("/chat")
-    public Result<ChatResponse> chat(@Valid @RequestBody ChatRequest request) {
-        log.info("收到聊天请求 - sessionId: {}, message: {}",
-                request.getSessionId(), request.getMessage());
+    public Result<ChatResponse> chat(@Valid @RequestBody ChatRequest request, HttpServletRequest servletRequest) {
+        fillUserIdentity(request, servletRequest);
+        log.info("收到聊天请求 - userId: {}, sessionId: {}, message: {}",
+                request.getUserId(), request.getSessionId(), request.getMessage());
 
         ChatResponse chatResponse = chatService.chat(request);
         return chatResponse.isSuccess()
@@ -59,25 +63,51 @@ public class ChatController {
      * 前端可通过 EventSource 或 fetch 流式读取回复内容。
      *
      * @param request 聊天请求体
+     * @param servletRequest servlet 请求，携带鉴权过滤器写入的用户身份
      * @return Flux 流式响应，每段内容以 "data: " 开头
      */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatStream(@Valid @RequestBody ChatRequest request) {
-        log.info("收到流式聊天请求 - sessionId: {}, message: {}",
-                request.getSessionId(), request.getMessage());
+    public Flux<String> chatStream(@Valid @RequestBody ChatRequest request, HttpServletRequest servletRequest) {
+        fillUserIdentity(request, servletRequest);
+        log.info("收到流式聊天请求 - userId: {}, sessionId: {}, message: {}",
+                request.getUserId(), request.getSessionId(), request.getMessage());
 
         return chatService.chatStream(request);
     }
 
     /**
-     * 清除会话历史
+     * 清除会话历史（按用户隔离，实际清除 userId:sessionId 对应的会话）
      *
      * @param sessionId 会话 ID
+     * @param servletRequest servlet 请求，携带鉴权过滤器写入的用户身份
      */
     @DeleteMapping("/session/{sessionId}")
-    public Result<Void> clearSession(@PathVariable String sessionId) {
-        chatService.clearSession(sessionId);
+    public Result<Void> clearSession(@PathVariable String sessionId, HttpServletRequest servletRequest) {
+        chatService.clearSession(conversationId(sessionId, servletRequest));
         return Result.success("会话已清除", null);
+    }
+
+    /**
+     * 把鉴权过滤器（JwtAuthFilter）写入 request attribute 的用户身份，
+     * 覆盖到请求体上，防止伪造请求体中的用户信息冒充他人
+     */
+    private void fillUserIdentity(ChatRequest request, HttpServletRequest servletRequest) {
+        Object userId = servletRequest.getAttribute(JwtAuthFilter.ATTR_USER_ID);
+        if (userId instanceof Long) {
+            request.setUserId((Long) userId);
+        }
+        Object userName = servletRequest.getAttribute(JwtAuthFilter.ATTR_USER_NAME);
+        if (userName instanceof String) {
+            request.setUserName((String) userName);
+        }
+    }
+
+    /**
+     * 会话 key 加上用户 ID 前缀，与 ChatServiceImpl 的会话隔离规则保持一致
+     */
+    private String conversationId(String sessionId, HttpServletRequest servletRequest) {
+        Object userId = servletRequest.getAttribute(JwtAuthFilter.ATTR_USER_ID);
+        return userId + ":" + sessionId;
     }
 
     /**

@@ -133,6 +133,20 @@
             <artifactId>jsonschema-generator</artifactId>
             <version>4.38.0</version>
         </dependency>
+
+        <!-- JWT 解析（与 hjy-community 一致的 jjwt 0.9.1，用于校验主后端签发的 token） -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt</artifactId>
+            <version>0.9.1</version>
+        </dependency>
+
+        <!-- jjwt 0.9.1 在 Java 11+ 需要 JAXB（DatatypeConverter）才能运行 -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.1</version>
+        </dependency>
     </dependencies>
 
     <build>

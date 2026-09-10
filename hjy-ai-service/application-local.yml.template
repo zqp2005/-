@@ -1,0 +1,6 @@
+# application-local.yml 模板 —— 复制本文件为 application-local.yml 并填入真实值
+# 复制命令（在 hjy-ai-service 目录下）：cp application-local.yml.template application-local.yml
+# application-local.yml 已被 .gitignore 排除，不会提交推送
+
+# 与 hjy-community 主后端一致的 JWT 签名密钥（见 hjy-community 的 application-local.yml 中 TOKEN_SECRET）
+TOKEN_SECRET: 你的JWT签名密钥
