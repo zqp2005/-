@@ -1,216 +1,119 @@
-# 合家云社区物业管理平台 (hjy-community)
+# 合家云社区物业管理平台
 
-基于 Spring Boot + Vue 的模块化社区物业管理平台，集成 AI 智能客服助手。
+基于 Spring Boot + Vue 的社区物业管理平台，集成 AI 智能客服助手。包含**报修工单状态机、投诉处理流、业主入住审核流、级联数据保护、操作/登录审计日志**等真实业务流程，以及**登录鉴权、按用户隔离记忆**的 AI 对话服务。
 
 ## 项目架构
 
 ```
-hejiayun_ui (Vue 2 + Element UI, 端口 80)
+hejiayun_ui (Vue 2 + Element UI, 端口 80, 独立仓库)
     │
     ├── /hejiayun/* ──→ hjy-community (Spring Boot 2.7, 端口 8080)
     │                        │
     │                        ├── MySQL + Redis + MyBatis-Plus
-    │                        └── Spring Security + JWT 认证
+    │                        └── Spring Security + JWT 认证 + RBAC 权限
     │
     └── /ai/* ────────→ hjy-ai-service (Spring Boot 3.2, 端口 8090)
-                             │
-                             ├── DeepSeek API (Spring AI + Function Calling)
-                             ├── Redis (会话存储)
-                             └── HTTP ──→ hjy-community (数据查询)
+                             │  （JWT 透传鉴权：校验主后端登录态）
+                             ├── DeepSeek (Spring AI + Function Calling)
+                             ├── Redis (按用户隔离的会话记忆)
+                             └── HTTP ──→ hjy-community (读写真实业务数据)
 ```
 
-## 技术栈
+## 核心业务功能
 
-| 层级 | 技术 |
+### 报修工单状态机
+
+六状态流转由专用动作接口驱动，非法转移自动拒绝，时间戳与操作人服务端自动记录（前端不可伪造）：
+
+```
+待处理 ──派单──> 已分派 ──接单──> 处理中 ──完成──> 已处理
+   │                │
+   ├──取消──> 已取消 ├──取消──> 已取消
+   └──不处理(需填原因)──> 不处理
+```
+
+- 工单号自动生成（RX + 时间戳），状态由后端强制，普通编辑接口对流转字段降级（只允许改内容）
+- 派单记录维修人，完成自动记录处理人姓名/ID/电话
+
+### 投诉建议处理流
+
+```
+待受理 ──受理──> 处理中 ──回复(填处理结果)──> 已处理 ──关闭──> 已关闭
+   └──────────── 不予受理(必填原因) ────────────────┘
+```
+
+### 业主入住绑定审核流
+
+- 新增绑定（人+房+身份）→ **审核中** → 审核通过/**驳回**（意见必填，全程留痕）
+- 重复绑定校验（同人同房，驳回后可重新提交）
+- **房间状态自动联动**：审核通过 → 房间"已入住"；解绑后无人 → 自动回"未入住"
+- 解绑自动写入审核记录（audit_type=unbind）
+
+### 数据保护：级联删除校验
+
+社区 → 楼栋 → 单元 → 房间 → 业主五级删除前检查下级数据，有数据整批拒绝并提示具体数量。
+
+### 审计日志
+
+- **登录日志**：成功/失败（含验证码错误、密码错误）记录 IP、浏览器、时间
+- **操作日志**：`@Log` 注解 + AOP 切面自动记录——谁、什么时间、对什么模块、做了什么操作、参数、结果、异常栈；覆盖全部业务写操作与状态动作
+
+## AI 智能助手
+
+| 能力 | 说明 |
 |------|------|
-| **后端框架** | Spring Boot 2.7.8 / 3.2.5、Spring Security |
-| **AI 框架** | Spring AI 1.0.0 + DeepSeek + Function Calling |
-| **持久层** | MyBatis-Plus 3.4.1、PageHelper、MySQL 8.0 |
-| **缓存** | Redis (Jedis / Lettuce) |
-| **前端** | Vue 2.6 + Element UI 2.14 + Vuex + Vue Router |
-| **工具库** | EasyPOI、Orika、FastJSON、Hutool、Druid、Lombok |
-| **认证** | JWT Token + BCrypt + Spring Security |
+| Function Calling | 6 大工具类调真实接口取数，杜绝幻觉（系统提示词外置 `system-prompt.txt`） |
+| 登录鉴权 | 校验主后端 JWT（共享 Redis 校验登录态），未登录无 AI 入口 |
+| 会话隔离 | 记忆按 `userId:sessionId` 存 Redis，重启不丢、用户互不可见 |
+| 流式输出 | SSE 打字机效果，`[DONE]` 结束标记 |
+| 故障自愈 | 调用主后端遇 401 自动重登重试，不再把故障吞成"查无数据" |
 
-## 模块划分
-
-### hjy-community（主后端）
-
-```
-com.msb.hjycommunity
-├── common/          # 公共基础（BaseController、BaseEntity、统一响应、异常处理、工具类）
-├── framework/       # 框架配置（Security、Redis、Swagger、Druid、JWT过滤器）
-├── system/          # 系统管理（用户、角色、菜单、部门、字典、通知、配置）
-├── community/       # 社区管理（社区基本信息CRUD）
-├── property/        # 物业业务（业主、楼栋、单元、房间、报修、投诉、访客）
-├── monitor/         # 系统监控（定时任务、操作日志、登录日志、在线用户）
-└── web/controller/  # REST 控制器层
-```
-
-### hjy-ai-service（AI 智能客服）
-
-```
-com.msb.hjy.ai
-├── controller/      # ChatController（对话API、流式SSE）
-├── service/         # ChatService（对话逻辑、会话管理）
-├── agent/           # AI代理（HjyAgent、SystemPrompt、ToolExecutor）
-├── tools/           # 6大工具集（RepairTool、ComplaintTool、PropertyFeeTool等）
-├── client/          # HjyCommunityClient（调用主后端HTTP接口）
-├── config/          # ChatClient配置、Redis、Web、AI参数
-├── prompt/          # 提示词模板管理
-├── dto/             # 数据传输对象
-├── model/           # 领域模型
-└── common/          # 常量、异常、统一结果封装
-```
-
-## 核心功能
-
-### 物业管理
-
-| 模块 | 功能 |
-|------|------|
-| **小区管理** | 社区信息维护、多条件分页查询 |
-| **楼栋/单元/房间** | 房产档案管理，层级关联 |
-| **业主管理** | 业主信息登记、车辆绑定、家庭成员 |
-| **报修服务** | 报修提交、工单流转（待处理→已派单→处理中→已完成→已评价）、取消、评价 |
-| **投诉建议** | 投诉提交、状态跟踪、处理评价 |
-| **访客管理** | 访客登记、来访记录查询 |
-| **公告通知** | 社区公告、活动发布管理 |
-
-### 系统管理
-
-| 模块 | 功能 |
-|------|------|
-| **用户管理** | 用户增删改查、状态管理、密码重置 |
-| **角色管理** | 角色分配、权限绑定 |
-| **菜单管理** | 动态路由配置、按钮级权限 |
-| **部门管理** | 组织架构树形管理 |
-| **数据字典** | 字典类型/数据维护 |
-
-### AI 智能客服
-
-| 模块 | 能力 |
-|------|------|
-| **报修查询** | "查报修进度" → 自动调接口返回工单列表 |
-| **报修提交** | "我家水管漏水" → AI 提取信息创建工单 |
-| **物业费查询** | "物业费多少" → 查询业主信息计算费用 |
-| **投诉建议** | "我要投诉噪音" → 自动提交投诉工单 |
-| **公告查询** | "最近有什么通知" → 查询公告列表 |
-| **社区信息** | "小区有什么设施" → 返回设施和周边配套 |
-| **业主信息** | "我的车辆信息" → 查询业主和车辆数据 |
+工具能力（诚实版）：查询（报修/投诉/物业费/业主/车辆/访客/公告/社区设施等 17 项）+ 创建（报修/投诉/访客登记）+ 取消报修（走状态机合法流转）。
 
 ## 快速开始
 
 ### 环境要求
 
-- JDK 8+（hjy-community）/ JDK 17+（hjy-ai-service）
-- Maven 3.8+
-- MySQL 8.0
-- Redis 6+
-- Node.js ≥ 8.9（前端）
-- DeepSeek API Key（AI 服务）
+- JDK 8（hjy-community）/ JDK 17+（hjy-ai-service）
+- MySQL 8.0、Redis 6+
+- DeepSeek API Key
 
-### 1. 启动主后端
+### 1. 本地凭据配置（真实密码不进仓库）
 
 ```bash
-cd hjy-community
-# 创建数据库 hehjiayun_community，执行初始化SQL
-# 修改 application-druid.yml 中的数据库连接信息
-mvn spring-boot:run
-# 启动于 http://localhost:8080
+# 两个后端各自复制模板并填入真实值（已被 .gitignore 排除）
+cp hjy-community/src/main/resources/application-local.yml.template hjy-community/src/main/resources/application-local.yml
+cp hjy-ai-service/src/main/resources/application-local.yml.template hjy-ai-service/src/main/resources/application-local.yml
+# 填入 MySQL 账号密码、JWT 密钥（两个服务的 JWT 密钥必须一致，AI 服务靠它验签）
 ```
 
-### 2. 启动 AI 服务
+### 2. 数据库初始化
+
+创建库 `hehjiayun_community` 后执行 `hjy-community/sql/` 下的初始化脚本与 `business-flow.sql`（业务流程改造的表结构与字典变更）。
+
+### 3. 启动
 
 ```bash
-cd hjy-ai-service
-# 设置环境变量 DEEPSEEK_API_KEY
-mvn spring-boot:run
-# 启动于 http://localhost:8090
+# 主后端（JDK 8）
+cd hjy-community && mvn spring-boot:run          # localhost:8080
+
+# AI 服务（JDK 17+，需 DEEPSEEK_API_KEY 环境变量）
+cd hjy-ai-service && mvn spring-boot:run         # localhost:8090
+
+# 前端（独立仓库）
+cd hejiayun_ui && npm run dev                    # localhost:80
 ```
 
-### 3. 启动前端
-
-```bash
-cd hejiayun_ui
-npm install
-npm run dev
-# 启动于 http://localhost:80
-```
-
-### Docker 部署（AI 服务）
-
-```bash
-cd hjy-ai-service
-docker build -t hjy-ai-service .
-docker run -d -p 8090:8090 -e DEEPSEEK_API_KEY=your-key hjy-ai-service
-```
-
-## API 文档
-
-### 对话接口
-
-```http
-POST /ai/chat
-Content-Type: application/json
-
-{
-  "sessionId": "user-123",
-  "message": "查一下我的物业费账单",
-  "userId": 1,
-  "userName": "张三"
-}
-```
-
-### 流式对话
-
-```http
-POST /ai/chat/stream
-Content-Type: application/json
-
-{
-  "sessionId": "user-123",
-  "message": "最近有什么公告"
-}
-```
-
-### AI 服务核心接口一览
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/ai/chat` | 同步对话 |
-| POST | `/ai/chat/stream` | 流式对话（SSE） |
-| DELETE | `/ai/session/{sessionId}` | 清除会话历史 |
-| GET | `/ai/health` | 健康检查 |
+登录 admin/admin123。管理员可登录后台处理工单；AI 助手悬浮窗登录后可见。
 
 ## 安全机制
 
-- **无状态认证**：基于 JWT Token，过滤器校验，30 分钟过期
-- **密码加密**：BCrypt 加密存储
-- **权限控制**：`@PreAuthorize` 方法级权限 + 前端 `v-permission` 按钮级控制
-- **CORS**：前后端分离跨域支持
-- **AI 服务**：通过 `/aiLogin` 免验证码接口认证，Token 自动缓存
+- **JWT 无状态认证** + `@PreAuthorize` 方法级权限 + 前端 `v-hasPermi` 按钮控制（RBAC 三级角色：超管/社区服务/只读）
+- **编辑降级**：状态流转字段只能走动作接口，普通修改一律忽略，杜绝越权改状态
+- **AI 服务鉴权**：JWT 透传验签 + Redis 登录态校验，会话记忆按用户物理隔离
+- **审计留痕**：登录/操作日志 + 绑定审核记录全链路可追溯
+- 本地凭据（MySQL 密码、JWT 密钥、DeepSeek Key）全部走 `application-local.yml` / 环境变量，不进仓库
 
-## 设计亮点
+## 提交风格
 
-1. **Function Calling 实现 AI 工具调用**：6 大类 20+ 工具函数，AI 自动识别意图并调用对应接口获取真实数据，避免幻觉
-2. **分层架构**：Controller → Service → Mapper，基类封装通用逻辑，减少重复代码
-3. **统一规范**：统一响应格式 `R<T>`、统一异常处理、统一分页封装
-4. **会话隔离**：按 sessionId 隔离 AI 对话上下文，支持多用户并发对话
-5. **流式输出**：WebFlux SSE 实现打字机效果，提升交互体验
-6. **凭据安全**：敏感配置通过环境变量注入，不硬编码在配置文件中
-
-## 项目结构总览
-
-```
-hjy/
-├── hjy-community/          # 主物业管理后端 (Spring Boot 2.7 + Java 8)
-│   ├── src/main/java/com/msb/hjycommunity/
-│   └── src/main/resources/
-├── hjy-ai-service/          # AI 智能客服 (Spring Boot 3.2 + Java 17)
-│   ├── src/main/java/com/msb/hjy/ai/
-│   └── src/main/resources/
-├── hejiayun_ui/             # 管理后台前端 (Vue 2 + Element UI)
-│   └── src/
-├── CLAUDE.md                # 项目开发指南
-└── README.md
-```
+中文提交信息，以功能描述为主。
