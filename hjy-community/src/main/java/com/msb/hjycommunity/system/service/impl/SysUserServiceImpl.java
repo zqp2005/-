@@ -2,6 +2,7 @@ package com.msb.hjycommunity.system.service.impl;
 
 import com.msb.hjycommunity.common.constant.UserConstants;
 import com.msb.hjycommunity.common.core.exception.CustomException;
+import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.system.domain.SysUser;
 
 
@@ -322,7 +323,16 @@ public class SysUserServiceImpl implements SysUserService {
      * @return 结果
      */
     @Override
+    @Transactional
     public int deleteUserByIds(Long[] userIds) {
+        for (Long userId : userIds) {
+            if (1L == userId) {
+                throw new CustomException(500, "不允许删除超级管理员用户");
+            }
+            if (SecurityUtils.getLoginUser().getUser().getUserId().equals(userId)) {
+                throw new CustomException(500, "当前用户不能删除自己");
+            }
+        }
         return userMapper.deleteUserByIds(userIds);
     }
 

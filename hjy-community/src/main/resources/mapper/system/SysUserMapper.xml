@@ -182,8 +182,12 @@
         delete from sys_user where user_id = #{userId}
     </delete>
 
+    <!-- 物理删除用户，并级联清理角色/岗位关联，避免留下孤儿关联数据 -->
     <delete id="deleteUserByIds" parameterType="Long">
-        update sys_user set del_flag = '2' where user_id in
+        delete u, ur, up from sys_user u
+        left join sys_user_role ur on u.user_id = ur.user_id
+        left join sys_user_post up on u.user_id = up.user_id
+        where u.user_id in
         <foreach collection="array" item="userId" open="(" separator="," close=")">
             #{userId}
         </foreach>
