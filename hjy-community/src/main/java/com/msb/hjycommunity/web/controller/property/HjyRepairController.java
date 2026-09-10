@@ -10,8 +10,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 报修Controller
@@ -54,7 +54,7 @@ public class HjyRepairController extends BaseController {
     }
 
     /**
-     * 修改报修
+     * 修改报修（普通编辑仅允许内容类字段，状态走动作接口）
      */
     @PutMapping
     @PreAuthorize("@pe.hasPerms('system:repair:edit')")
@@ -73,26 +73,50 @@ public class HjyRepairController extends BaseController {
     }
 
     /**
-     * 分派报修
+     * 派单：待处理 -> 已分派
      */
-    @PutMapping("/assign")
+    @PutMapping("/assign/{repairId}")
     @PreAuthorize("@pe.hasPerms('system:repair:assign')")
-    public BaseResponse assign(@RequestBody HjyRepair repair) {
-        repair.setRepairState("Allocated");
-        repair.setAssignmentTime(new Date());
-        repair.setUpdateBy(SecurityUtils.getUserName());
-        return toAjax(repairService.updateRepair(repair));
+    public BaseResponse assign(@PathVariable Long repairId, @RequestBody Map<String, Object> params) {
+        Long assignmentId = Long.valueOf(params.get("assignmentId").toString());
+        return toAjax(repairService.assignRepair(repairId, assignmentId));
     }
 
     /**
-     * 处理报修
+     * 接单：已分派 -> 处理中
      */
-    @PutMapping("/process")
-    @PreAuthorize("@pe.hasPerms('system:repair:process')")
-    public BaseResponse process(@RequestBody HjyRepair repair) {
-        repair.setRepairState("Processed");
-        repair.setCompleteTime(new Date());
-        repair.setUpdateBy(SecurityUtils.getUserName());
-        return toAjax(repairService.updateRepair(repair));
+    @PutMapping("/receive/{repairId}")
+    @PreAuthorize("@pe.hasPerms('system:repair:receive')")
+    public BaseResponse receive(@PathVariable Long repairId) {
+        return toAjax(repairService.receiveRepair(repairId));
+    }
+
+    /**
+     * 完成：处理中 -> 已处理
+     */
+    @PutMapping("/complete/{repairId}")
+    @PreAuthorize("@pe.hasPerms('system:repair:complete')")
+    public BaseResponse complete(@PathVariable Long repairId) {
+        return toAjax(repairService.completeRepair(repairId));
+    }
+
+    /**
+     * 取消：待处理/已分派 -> 已取消
+     */
+    @PutMapping("/cancel/{repairId}")
+    @PreAuthorize("@pe.hasPerms('system:repair:cancel')")
+    public BaseResponse cancel(@PathVariable Long repairId, @RequestBody Map<String, Object> params) {
+        String reason = params.get("reason") == null ? "" : params.get("reason").toString();
+        return toAjax(repairService.cancelRepair(repairId, reason));
+    }
+
+    /**
+     * 不处理：待处理 -> 不处理
+     */
+    @PutMapping("/reject/{repairId}")
+    @PreAuthorize("@pe.hasPerms('system:repair:reject')")
+    public BaseResponse reject(@PathVariable Long repairId, @RequestBody Map<String, Object> params) {
+        String reason = params.get("reason") == null ? "" : params.get("reason").toString();
+        return toAjax(repairService.rejectRepair(repairId, reason));
     }
 }
