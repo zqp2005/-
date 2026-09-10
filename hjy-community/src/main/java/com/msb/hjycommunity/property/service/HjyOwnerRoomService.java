@@ -46,7 +46,7 @@ public interface HjyOwnerRoomService {
     List<HjyOwnerRoomRecord> selectRecordList(Long ownerRoomId);
 
     /**
-     * 新增审核记录并更新状态
+     * 审核绑定：Auditing -> Binding(pass)/Rejected(reject)，写审核记录，pass 时联动房间为已入住
      */
-    int auditOwnerRoom(HjyOwnerRoom ownerRoom, HjyOwnerRoomRecord record);
+    int auditOwnerRoom(Long ownerRoomId, boolean pass, String auditOpinion);
 }

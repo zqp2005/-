@@ -43,6 +43,16 @@ public interface HjyOwnerRoomMapper extends BaseMapper<HjyOwnerRoom> {
     int deleteOwnerRoomByIds(Long[] ownerRoomIds);
 
     /**
+     * 统计同房间同人的有效绑定数（已驳回的除外）
+     */
+    long countActiveBinding(@Param("roomId") Long roomId, @Param("ownerId") Long ownerId);
+
+    /**
+     * 统计房间当前已绑定的数量
+     */
+    long countRoomBindings(@Param("roomId") Long roomId);
+
+    /**
      * 查询审核记录
      */
     List<HjyOwnerRoomRecord> selectRecordList(@Param("ownerRoomId") Long ownerRoomId);

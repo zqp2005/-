@@ -16,9 +16,31 @@ public class HjyOwnerRoomRecord extends BaseEntity {
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private Long recordId;
 
-    /** 绑定ID */
+    /** 绑定ID（数据库 varchar） */
+    private String ownerRoomId;
+
+    /** 小区ID */
     @JsonFormat(shape = JsonFormat.Shape.STRING)
-    private Long ownerRoomId;
+    private Long communityId;
+
+    /** 楼栋ID */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long buildingId;
+
+    /** 单元ID */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long unitId;
+
+    /** 房间ID */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long roomId;
+
+    /** 业主ID */
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    private Long ownerId;
+
+    /** 业主类型 */
+    private String ownerType;
 
     /** 绑定状态 */
     private String roomStatus;
@@ -37,12 +59,60 @@ public class HjyOwnerRoomRecord extends BaseEntity {
         this.recordId = recordId;
     }
 
-    public Long getOwnerRoomId() {
+    public String getOwnerRoomId() {
         return ownerRoomId;
     }
 
-    public void setOwnerRoomId(Long ownerRoomId) {
+    public void setOwnerRoomId(String ownerRoomId) {
         this.ownerRoomId = ownerRoomId;
+    }
+
+    public Long getCommunityId() {
+        return communityId;
+    }
+
+    public void setCommunityId(Long communityId) {
+        this.communityId = communityId;
+    }
+
+    public Long getBuildingId() {
+        return buildingId;
+    }
+
+    public void setBuildingId(Long buildingId) {
+        this.buildingId = buildingId;
+    }
+
+    public Long getUnitId() {
+        return unitId;
+    }
+
+    public void setUnitId(Long unitId) {
+        this.unitId = unitId;
+    }
+
+    public Long getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(Long roomId) {
+        this.roomId = roomId;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
+    }
+
+    public String getOwnerType() {
+        return ownerType;
+    }
+
+    public void setOwnerType(String ownerType) {
+        this.ownerType = ownerType;
     }
 
     public String getRoomStatus() {
@@ -74,6 +144,8 @@ public class HjyOwnerRoomRecord extends BaseEntity {
         return "HjyOwnerRoomRecord{" +
                 "recordId=" + recordId +
                 ", ownerRoomId=" + ownerRoomId +
+                ", roomId=" + roomId +
+                ", ownerId=" + ownerId +
                 ", roomStatus='" + roomStatus + '\'' +
                 ", recordAuditType='" + recordAuditType + '\'' +
                 '}';

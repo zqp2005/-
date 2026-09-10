@@ -80,19 +80,14 @@ public class HjyOwnerRoomController extends BaseController {
     }
 
     /**
-     * 审核房屋绑定
+     * 审核绑定：通过(pass)或驳回(reject)
      */
     @PutMapping("/audit")
     @PreAuthorize("@pe.hasPerms('system:ownerRoom:audit')")
     public BaseResponse audit(@RequestBody Map<String, Object> params) {
-        HjyOwnerRoom ownerRoom = new HjyOwnerRoom();
-        ownerRoom.setOwnerRoomId(Long.valueOf(params.get("ownerRoomId").toString()));
-        ownerRoom.setRoomStatus(params.get("roomStatus").toString());
-        
-        HjyOwnerRoomRecord record = new HjyOwnerRoomRecord();
-        record.setRecordAuditOpinion((String) params.get("recordAuditOpinion"));
-        record.setRecordAuditType("Web");
-        
-        return toAjax(ownerRoomService.auditOwnerRoom(ownerRoom, record));
+        Long ownerRoomId = Long.valueOf(params.get("ownerRoomId").toString());
+        boolean pass = "pass".equals(params.get("auditResult"));
+        String opinion = params.get("recordAuditOpinion") == null ? "" : params.get("recordAuditOpinion").toString();
+        return toAjax(ownerRoomService.auditOwnerRoom(ownerRoomId, pass, opinion));
     }
 }

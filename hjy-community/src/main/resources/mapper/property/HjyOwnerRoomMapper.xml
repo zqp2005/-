@@ -130,6 +130,16 @@
         </foreach>
     </delete>
 
+    <select id="countActiveBinding" resultType="long">
+        SELECT COUNT(*) FROM hjy_owner_room
+        WHERE room_id = #{roomId} AND owner_id = #{ownerId} AND room_status != 'Rejected'
+    </select>
+
+    <select id="countRoomBindings" parameterType="Long" resultType="long">
+        SELECT COUNT(*) FROM hjy_owner_room
+        WHERE room_id = #{roomId} AND room_status = 'Binding'
+    </select>
+
     <select id="selectRecordList" parameterType="Long" resultMap="HjyOwnerRoomRecordResult">
         SELECT record_id, owner_room_id, room_status, record_audit_opinion, record_audit_type,
                create_by, create_time, remark
