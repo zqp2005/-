@@ -16,7 +16,13 @@ hejiayun_ui (Vue 2 + Element UI, 端口 80, 独立仓库)
                              │  （JWT 透传鉴权：校验主后端登录态）
                              ├── DeepSeek (Spring AI + Function Calling)
                              ├── Redis (按用户隔离的会话记忆)
-                             └── HTTP ──→ hjy-community (读写真实业务数据)
+                             ├── HTTP ──→ hjy-community (读写真实业务数据)
+                             │
+                             └── MCP Client（SSE）
+                                    └──→ hjy-mcp-server (Spring Boot 3.2, 端口 8091)
+                                          ├─ query_login_location：登录地址定位（公网IP→高德归属地，
+                                          │   本地内网→当前网络出口所在地，兜底社区注册地址）
+                                          └─ query_weather：城市实时天气（高德）
 ```
 
 ## 核心业务功能
@@ -63,12 +69,14 @@ hejiayun_ui (Vue 2 + Element UI, 端口 80, 独立仓库)
 | 能力 | 说明 |
 |------|------|
 | Function Calling | 6 大工具类调真实接口取数，杜绝幻觉（系统提示词外置 `system-prompt.txt`） |
+| MCP 工具扩展 | 经 MCP 协议（SSE）挂载独立的 hjy-mcp-server：登录地址定位 + 高德天气，AI 自动组合调用（如"我在哪→查该地天气"） |
+| 通用对话 | 物业问题调工具，闲聊/知识问答正常回答 |
 | 登录鉴权 | 校验主后端 JWT（共享 Redis 校验登录态），未登录无 AI 入口 |
 | 会话隔离 | 记忆按 `userId:sessionId` 存 Redis，重启不丢、用户互不可见 |
 | 流式输出 | SSE 打字机效果，`[DONE]` 结束标记 |
 | 故障自愈 | 调用主后端遇 401 自动重登重试，不再把故障吞成"查无数据" |
 
-工具能力（诚实版）：查询（报修/投诉/物业费/业主/车辆/访客/公告/社区设施等 17 项）+ 创建（报修/投诉/访客登记）+ 取消报修（走状态机合法流转）。
+工具能力（诚实版）：查询（报修/投诉/物业费/业主/车辆/访客/公告/社区设施等 17 项）+ 创建（报修/投诉/访客登记）+ 取消报修（走状态机合法流转）+ MCP 环境工具（登录定位/天气）。
 
 ## 快速开始
 
@@ -81,23 +89,32 @@ hejiayun_ui (Vue 2 + Element UI, 端口 80, 独立仓库)
 ### 1. 本地凭据配置（真实密码不进仓库）
 
 ```bash
-# 两个后端各自复制模板并填入真实值（已被 .gitignore 排除）
+# 三个后端各自复制模板并填入真实值（已被 .gitignore 排除）
 cp hjy-community/src/main/resources/application-local.yml.template hjy-community/src/main/resources/application-local.yml
 cp hjy-ai-service/src/main/resources/application-local.yml.template hjy-ai-service/src/main/resources/application-local.yml
-# 填入 MySQL 账号密码、JWT 密钥（两个服务的 JWT 密钥必须一致，AI 服务靠它验签）
+cp hjy-mcp-server/src/main/resources/application-local.yml.template hjy-mcp-server/src/main/resources/application-local.yml
+# 填入 MySQL 账号密码、JWT 密钥（community 与 ai-service 的 JWT 密钥必须一致）、高德 Web 服务 Key（mcp-server）
 ```
+
+高德 Key 免费获取：[lbs.amap.com](https://lbs.amap.com) 注册 → 控制台 → 创建应用 → 添加 Key（类型选"Web服务"）。
 
 ### 2. 数据库初始化
 
 创建库 `hehjiayun_community` 后执行 `hjy-community/sql/` 下的初始化脚本与 `business-flow.sql`（业务流程改造的表结构与字典变更）。
 
-### 3. 启动
+### 3. 启动（注意顺序：MCP 服务需在 AI 服务之前）
 
 ```bash
+# Redis 先启动，然后：
+
+# MCP 工具服务（JDK 17+）
+cd hjy-mcp-server && mvn spring-boot:run         # localhost:8091
+
 # 主后端（JDK 8）
 cd hjy-community && mvn spring-boot:run          # localhost:8080
 
-# AI 服务（JDK 17+，需 DEEPSEEK_API_KEY 环境变量）
+# AI 服务（JDK 17+，需 DEEPSEEK_API_KEY 环境变量；启动时连接 8091，
+# 不需要 MCP 功能时可设 MCP_CLIENT_ENABLED=false 跳过连接）
 cd hjy-ai-service && mvn spring-boot:run         # localhost:8090
 
 # 前端（独立仓库）
