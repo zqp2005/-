@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyUnit;
@@ -34,6 +35,8 @@ public class HjyUnitServiceImpl implements HjyUnitService {
     @Override
     @Transactional
     public int insertUnit(HjyUnit unit) {
+        // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
+        unit.setUnitId(IdWorker.getId());
         unit.setCreateBy(SecurityUtils.getUserName());
         return unitMapper.insertUnit(unit);
     }

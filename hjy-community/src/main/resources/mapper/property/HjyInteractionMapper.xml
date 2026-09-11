@@ -61,6 +61,7 @@
     <insert id="insertInteraction" parameterType="HjyInteraction" useGeneratedKeys="true" keyProperty="interactionId">
         INSERT INTO hjy_community_interaction
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="interactionId != null">interaction_id,</if>
             <if test="communityId != null">community_id,</if>
             <if test="userId != null">user_id,</if>
             <if test="content != null and content != ''">content,</if>
@@ -69,6 +70,7 @@
             create_time
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="interactionId != null">#{interactionId},</if>
             <if test="communityId != null">#{communityId},</if>
             <if test="userId != null">#{userId},</if>
             <if test="content != null and content != ''">#{content},</if>

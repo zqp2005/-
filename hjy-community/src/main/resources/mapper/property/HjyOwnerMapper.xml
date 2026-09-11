@@ -77,6 +77,7 @@
     <insert id="insertOwner" parameterType="HjyOwner" useGeneratedKeys="true" keyProperty="ownerId">
         INSERT INTO hjy_owner
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ownerId != null">owner_id,</if>
             <if test="ownerNickname != null and ownerNickname != ''">owner_nickname,</if>
             <if test="ownerRealName != null and ownerRealName != ''">owner_real_name,</if>
             <if test="ownerGender != null and ownerGender != ''">owner_gender,</if>
@@ -98,6 +99,7 @@
             create_time
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="ownerId != null">#{ownerId},</if>
             <if test="ownerNickname != null and ownerNickname != ''">#{ownerNickname},</if>
             <if test="ownerRealName != null and ownerRealName != ''">#{ownerRealName},</if>
             <if test="ownerGender != null and ownerGender != ''">#{ownerGender},</if>

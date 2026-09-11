@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyVisitor;
 import com.msb.hjycommunity.property.mapper.HjyVisitorMapper;
@@ -32,6 +33,8 @@ public class HjyVisitorServiceImpl implements HjyVisitorService {
     @Override
     @Transactional
     public int insertVisitor(HjyVisitor visitor) {
+        // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
+        visitor.setVisitorId(IdWorker.getId());
         visitor.setCreateBy(SecurityUtils.getUserName());
         return visitorMapper.insertVisitor(visitor);
     }

@@ -58,6 +58,7 @@
     <insert id="insertUnit" parameterType="HjyUnit" useGeneratedKeys="true" keyProperty="unitId">
         INSERT INTO hjy_unit
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="unitId != null">unit_id,</if>
             <if test="buildingId != null">building_id,</if>
             <if test="communityId != null">community_id,</if>
             <if test="unitName != null and unitName != ''">unit_name,</if>
@@ -70,6 +71,7 @@
             create_time
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="unitId != null">#{unitId},</if>
             <if test="buildingId != null">#{buildingId},</if>
             <if test="communityId != null">#{communityId},</if>
             <if test="unitName != null and unitName != ''">#{unitName},</if>

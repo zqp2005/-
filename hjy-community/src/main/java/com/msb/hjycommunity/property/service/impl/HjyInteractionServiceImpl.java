@@ -1,5 +1,6 @@
 package com.msb.hjycommunity.property.service.impl;
 
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyComment;
 import com.msb.hjycommunity.property.domain.HjyInteraction;
@@ -33,6 +34,8 @@ public class HjyInteractionServiceImpl implements HjyInteractionService {
     @Override
     @Transactional
     public int insertInteraction(HjyInteraction interaction) {
+        // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
+        interaction.setInteractionId(IdWorker.getId());
         interaction.setCreateBy(SecurityUtils.getUserName());
         return interactionMapper.insertInteraction(interaction);
     }

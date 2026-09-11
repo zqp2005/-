@@ -49,6 +49,7 @@
     <insert id="insertBuilding" parameterType="HjyBuilding" useGeneratedKeys="true" keyProperty="buildingId">
         INSERT INTO hjy_building
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="buildingId != null">building_id,</if>
             <if test="buildingName != null and buildingName != ''">building_name,</if>
             <if test="buildingCode != null and buildingCode != ''">building_code,</if>
             <if test="buildingAcreage != null and buildingAcreage != ''">building_acreage,</if>
@@ -58,6 +59,7 @@
             create_time
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="buildingId != null">#{buildingId},</if>
             <if test="buildingName != null and buildingName != ''">#{buildingName},</if>
             <if test="buildingCode != null and buildingCode != ''">#{buildingCode},</if>
             <if test="buildingAcreage != null and buildingAcreage != ''">#{buildingAcreage},</if>

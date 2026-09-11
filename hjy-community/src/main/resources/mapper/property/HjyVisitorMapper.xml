@@ -52,6 +52,7 @@
     <insert id="insertVisitor" parameterType="HjyVisitor" useGeneratedKeys="true" keyProperty="visitorId">
         INSERT INTO hjy_visitor
         <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="visitorId != null">visitor_id,</if>
             <if test="visitorName != null and visitorName != ''">visitor_name,</if>
             <if test="visitorPhoneNumber != null and visitorPhoneNumber != ''">visitor_phone_number,</if>
             <if test="visitorDate != null">visitor_date,</if>
@@ -63,6 +64,7 @@
             create_time
         </trim>
         <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="visitorId != null">#{visitorId},</if>
             <if test="visitorName != null and visitorName != ''">#{visitorName},</if>
             <if test="visitorPhoneNumber != null and visitorPhoneNumber != ''">#{visitorPhoneNumber},</if>
             <if test="visitorDate != null">#{visitorDate},</if>
