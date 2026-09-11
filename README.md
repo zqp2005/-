@@ -137,6 +137,23 @@ cd hejiayun_ui && npm run dev                    # localhost:80
 
 登录 admin/admin123。管理员可登录后台处理工单；AI 助手悬浮窗登录后可见。
 
+## 云服务器部署（dev 分支）
+
+项目已部署至阿里云 ECS（CentOS 7，2C/1.7G + 2G swap），Docker Compose 编排，复用服务器已有的 MySQL 8.0 / Redis 容器。部署物料见 [`deploy/`](deploy/README.md)（Dockerfile、nginx 反代、compose 编排、更新步骤）。
+
+| 访问方式 | 地址 | 说明 |
+|----------|------|------|
+| 公网 IP | `http://47.94.101.156/` | 任何设备可访问 |
+| 域名别名 | `http://www.hejiayun.com/` | 仅限已配置 hosts 的电脑（见下） |
+
+**域名别名的配置方法**（新电脑上复刻）：管理员编辑 `C:\Windows\System32\drivers\etc\hosts`（Linux/macOS 为 `/etc/hosts`），追加一行后刷新 DNS：
+
+```
+47.94.101.156  www.hejiayun.com
+```
+
+线上容器：`hjy-frontend`(nginx:1.24, 80) → `hjy-community`(8080) / `hjy-ai`(8090) / `hjy-mcp`(8091 仅内网)；更新部署与 SQL 同步步骤见 `deploy/README.md`。
+
 ## 安全机制
 
 - **JWT 无状态认证** + `@PreAuthorize` 方法级权限 + 前端 `v-hasPermi` 按钮控制（RBAC 三级角色：超管/社区服务/只读）
