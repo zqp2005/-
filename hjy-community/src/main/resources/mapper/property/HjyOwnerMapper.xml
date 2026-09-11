@@ -22,6 +22,7 @@
         <result property="ownerLogonMode"     column="owner_logon_mode"  />
         <result property="ownerType"          column="owner_type"         />
         <result property="ownerPassword"      column="owner_password"    />
+        <result property="roomName"           column="room_name"         />
         <result property="createBy"           column="create_by"         />
         <result property="createTime"         column="create_time"       />
         <result property="updateBy"           column="update_by"         />
@@ -34,7 +35,11 @@
                owner_id_card, owner_phone_number, owner_open_id, owner_wechat_id,
                owner_qq_number, owner_birthday, owner_portrait, owner_signature,
                owner_status, owner_logon_mode, owner_type, owner_password,
-               create_by, create_time, update_by, update_time, remark
+               create_by, create_time, update_by, update_time, remark,
+               (SELECT GROUP_CONCAT(r.room_name SEPARATOR '、')
+                FROM hjy_owner_room orr
+                JOIN hjy_room r ON orr.room_id = r.room_id
+                WHERE orr.owner_id = hjy_owner.owner_id AND orr.room_status = 'Binding') AS room_name
         FROM hjy_owner
     </sql>
 

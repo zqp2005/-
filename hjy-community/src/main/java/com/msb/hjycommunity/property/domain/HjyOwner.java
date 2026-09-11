@@ -66,6 +66,9 @@ public class HjyOwner extends BaseEntity {
     /** 密码 */
     private String ownerPassword;
 
+    /** 已绑定房屋名（列表聚合展示，非表字段） */
+    private String roomName;
+
     public Long getOwnerId() {
         return ownerId;
     }
@@ -200,6 +203,14 @@ public class HjyOwner extends BaseEntity {
 
     public void setOwnerPassword(String ownerPassword) {
         this.ownerPassword = ownerPassword;
+    }
+
+    public String getRoomName() {
+        return roomName;
+    }
+
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
     }
 
     @Override
