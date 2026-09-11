@@ -81,6 +81,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 // 对于登录login 验证码captchaImage 允许匿名访问
                 .antMatchers("/login","/captchaImage","/aiLogin").anonymous()
                 .antMatchers("/exportExcel/exportCommunityExcel").anonymous()
+                // 业主端（小程序）接口：放行 Spring Security，认证由 AppAuthFilter 自管（独立业主令牌）
+                .antMatchers("/app/**").permitAll()
                 // Swagger 相关资源放行
                 .antMatchers("/swagger-ui.html").anonymous()
                 .antMatchers("/swagger-resources/**").anonymous()

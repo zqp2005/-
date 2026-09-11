@@ -63,6 +63,16 @@ public class Constants {
     public static final String LOGIN_TOKEN_KEY = "login_tokens:";
 
     /**
+     * 业主端登录态 redis key（小程序 /app 接口独立认证，与管理端 login_tokens 隔离）
+     */
+    public static final String OWNER_TOKEN_KEY = "owner_tokens:";
+
+    /**
+     * 业主端 JWT 中存放 uuid 的 claim 名
+     */
+    public static final String OWNER_USER_KEY = "owner_user_key";
+
+    /**
      * 防重提交 redis key
      */
     public static final String REPEAT_SUBMIT_KEY = "repeat_submit:";
