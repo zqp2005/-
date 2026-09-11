@@ -39,9 +39,48 @@ public class LoginUser implements UserDetails {
      */
     private Set<String> permissions;
 
+    /**
+     * 登录地点
+     */
+    private String loginLocation;
+
+    /**
+     * 浏览器类型
+     */
+    private String browser;
+
+    /**
+     * 操作系统
+     */
+    private String os;
+
     public LoginUser(SysUser user, Set<String> permissions) {
         this.user = user;
         this.permissions = permissions;
+    }
+
+    public String getLoginLocation() {
+        return loginLocation;
+    }
+
+    public void setLoginLocation(String loginLocation) {
+        this.loginLocation = loginLocation;
+    }
+
+    public String getBrowser() {
+        return browser;
+    }
+
+    public void setBrowser(String browser) {
+        this.browser = browser;
+    }
+
+    public String getOs() {
+        return os;
+    }
+
+    public void setOs(String os) {
+        this.os = os;
     }
 
     public Set<String> getPermissions() {

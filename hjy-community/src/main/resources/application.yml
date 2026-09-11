@@ -30,6 +30,9 @@ logging:
 spring:
   profiles:
     active: druid
+  # Jackson 全局时区（默认 UTC 会导致时间序列化差 8 小时）
+  jackson:
+    time-zone: GMT+8
   # 启动时自动加载本地真实配置（数据库账号密码、token密钥），与 application-druid.yml 同目录
   # 该文件被 .gitignore 排除不会提交；模板见同目录 application-local.yml.template
   config:

@@ -37,8 +37,18 @@ public class SysUserOnlineServiceImpl implements SysUserOnlineService {
                         online.setUserName(loginUser.getUsername());
                         if (loginUser.getUser() != null) {
                             online.setIpaddr(loginUser.getUser().getLoginIp());
+                            // 部门名称（登录查询带 dept join，正常均有值；为空则留空不硬造）
+                            if (loginUser.getUser().getDept() != null) {
+                                online.setDeptName(loginUser.getUser().getDept().getDeptName());
+                            }
                         }
-                        online.setLoginTime(new Date(loginUser.getLoginTime()));
+                        // 登录上下文（旧缓存可能为 null，留空展示）
+                        online.setLoginLocation(loginUser.getLoginLocation());
+                        online.setBrowser(loginUser.getBrowser());
+                        online.setOs(loginUser.getOs());
+                        if (loginUser.getLoginTime() != null) {
+                            online.setLoginTime(new Date(loginUser.getLoginTime()));
+                        }
 
                         boolean match = true;
                         if (StringUtils.isNotEmpty(sysUserOnline.getIpaddr()) 

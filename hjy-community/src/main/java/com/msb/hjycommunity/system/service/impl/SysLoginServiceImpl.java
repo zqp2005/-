@@ -76,6 +76,15 @@ public class SysLoginServiceImpl implements SysLoginService {
         //3.获取用户经过身份验证的用户的主体信息
         LoginUser loginUser = (LoginUser) authentication.getPrincipal();
 
+        //4.记录登录上下文（时间/归属地/浏览器/操作系统），随 loginUser 一并缓存到 Redis，供在线用户列表展示
+        ServletRequestAttributes attributes = ServletUtils.getRequestAttributes();
+        HttpServletRequest request = attributes == null ? null : attributes.getRequest();
+        String ip = IpUtils.getIpAddr(request);
+        loginUser.setLoginTime(System.currentTimeMillis());
+        loginUser.setLoginLocation(IpUtils.getLoginLocation(ip));
+        loginUser.setBrowser(IpUtils.getBrowser(request));
+        loginUser.setOs(IpUtils.getOs(request));
+
         String token = tokenService.createToken(loginUser);
         recordLogininfor(username, "0", "登录成功");
         return token;
