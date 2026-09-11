@@ -144,13 +144,9 @@ cd hejiayun_ui && npm run dev                    # localhost:80
 | 访问方式 | 地址 | 说明 |
 |----------|------|------|
 | 公网 IP | `http://47.94.101.156/` | 任何设备可访问 |
-| 域名别名 | `http://www.hejiayun.com/` | 仅限已配置 hosts 的电脑（见下） |
 
-**域名别名的配置方法**（新电脑上复刻）：管理员编辑 `C:\Windows\System32\drivers\etc\hosts`（Linux/macOS 为 `/etc/hosts`），追加一行后刷新 DNS：
-
-```
-47.94.101.156  www.hejiayun.com
-```
+> ⚠️ **关于域名**：hosts 别名方案在本服务器**不可用**——阿里云边缘网关（Server: Beaver）会按请求的 Host 头做 ICP 备案检查，未备案域名的 80/8080 请求一律 403 拦截（"Non-compliance ICP Filing"），请求到不了 nginx。IP 直连（Host 头为 IP）不受影响。
+> 想用域名需走正规流程：购买域名 → ICP 备案（个人免费，约 2~4 周）→ DNS 解析到 47.94.101.156 → 配 HTTPS 证书；备案完成后 Web 与小程序可共用该域名。
 
 线上容器：`hjy-frontend`(nginx:1.24, 80) → `hjy-community`(8080) / `hjy-ai`(8090) / `hjy-mcp`(8091 仅内网)；更新部署与 SQL 同步步骤见 `deploy/README.md`。
 
