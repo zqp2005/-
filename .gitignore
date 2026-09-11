@@ -20,3 +20,7 @@ application-local.yml
 
 # PPT generation scripts
 generate-pptx.js
+*.pptx
+
+# Playwright debug artifacts
+.playwright-mcp/
