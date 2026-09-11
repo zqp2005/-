@@ -13,12 +13,16 @@ import javax.annotation.Resource;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 报修Service实现
  */
 @Service
 public class HjyRepairServiceImpl implements HjyRepairService {
+
+    /** 大陆 11 位手机号 */
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
 
     @Resource
     private HjyRepairMapper repairMapper;
@@ -36,6 +40,11 @@ public class HjyRepairServiceImpl implements HjyRepairService {
     @Override
     @Transactional
     public int insertRepair(HjyRepair repair) {
+        // 业主电话非空时校验手机号格式
+        String phone = repair.getOwnerPhoneNumber();
+        if (phone != null && !phone.trim().isEmpty() && !PHONE_PATTERN.matcher(phone).matches()) {
+            throw new CustomException(500, "手机号格式不正确");
+        }
         repair.setCreateBy(SecurityUtils.getUserName());
         // 状态一律由后端控制为待处理，工单号为空时自动生成（RX+时间戳，避免并发重号）
         repair.setRepairState(RepairState.PENDING);

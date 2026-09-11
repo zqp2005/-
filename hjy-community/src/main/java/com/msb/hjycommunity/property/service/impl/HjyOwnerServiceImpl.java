@@ -11,12 +11,19 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 业主Service实现
  */
 @Service
 public class HjyOwnerServiceImpl implements HjyOwnerService {
+
+    /** 大陆 11 位手机号 */
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
+
+    /** 18 位身份证号（末位数字或 X，大小写均允许） */
+    private static final Pattern ID_CARD_PATTERN = Pattern.compile("^\\d{17}[\\dXx]$");
 
     @Resource
     private HjyOwnerMapper ownerMapper;
@@ -34,6 +41,7 @@ public class HjyOwnerServiceImpl implements HjyOwnerService {
     @Override
     @Transactional
     public int insertOwner(HjyOwner owner) {
+        validateOwnerContact(owner);
         // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
         owner.setOwnerId(IdWorker.getId());
         owner.setCreateBy(SecurityUtils.getUserName());
@@ -43,6 +51,7 @@ public class HjyOwnerServiceImpl implements HjyOwnerService {
     @Override
     @Transactional
     public int updateOwner(HjyOwner owner) {
+        validateOwnerContact(owner);
         owner.setUpdateBy(SecurityUtils.getUserName());
         return ownerMapper.updateOwner(owner);
     }
@@ -72,5 +81,17 @@ public class HjyOwnerServiceImpl implements HjyOwnerService {
     @Override
     public HjyOwner selectOwnerByPhone(String ownerPhoneNumber) {
         return ownerMapper.selectOwnerByPhone(ownerPhoneNumber);
+    }
+
+    /** 手机号/身份证号非空时校验格式，不符抛业务异常 */
+    private void validateOwnerContact(HjyOwner owner) {
+        String phone = owner.getOwnerPhoneNumber();
+        if (phone != null && !phone.trim().isEmpty() && !PHONE_PATTERN.matcher(phone).matches()) {
+            throw new CustomException(500, "手机号格式不正确");
+        }
+        String idCard = owner.getOwnerIdCard();
+        if (idCard != null && !idCard.trim().isEmpty() && !ID_CARD_PATTERN.matcher(idCard).matches()) {
+            throw new CustomException(500, "身份证号格式不正确");
+        }
     }
 }

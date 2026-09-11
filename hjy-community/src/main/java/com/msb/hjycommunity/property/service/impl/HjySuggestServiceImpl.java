@@ -12,12 +12,16 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * 投诉建议Service实现
  */
 @Service
 public class HjySuggestServiceImpl implements HjySuggestService {
+
+    /** 大陆 11 位手机号 */
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^1[3-9]\\d{9}$");
 
     @Resource
     private HjySuggestMapper suggestMapper;
@@ -35,6 +39,11 @@ public class HjySuggestServiceImpl implements HjySuggestService {
     @Override
     @Transactional
     public int insertSuggest(HjySuggest suggest) {
+        // 业主电话非空时校验手机号格式
+        String phone = suggest.getOwnerPhoneNumber();
+        if (phone != null && !phone.trim().isEmpty() && !PHONE_PATTERN.matcher(phone).matches()) {
+            throw new CustomException(500, "手机号格式不正确");
+        }
         suggest.setCreateBy(SecurityUtils.getUserName());
         // 状态一律由后端控制为待受理
         suggest.setComplaintState(SuggestState.PENDING);
