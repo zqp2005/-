@@ -89,6 +89,15 @@ public class AppOwnerController extends BaseController {
         owner.setOwnerRealName(realName);
         owner.setOwnerIdCard(idCard);
         owner.setOwnerPassword(encrypted);
+        // 性别/年龄（选填，白名单校验后写入）
+        String gender = trimToNull(body.getOwnerGender());
+        if ("Male".equals(gender) || "Female".equals(gender)) {
+            owner.setOwnerGender(gender);
+        }
+        Integer age = body.getOwnerAge();
+        if (age != null && age > 0 && age < 150) {
+            owner.setOwnerAge(age);
+        }
         ownerService.insertOwner(owner);
         return BaseResponse.success(buildOwnerData(owner.getOwnerId(), realName));
     }

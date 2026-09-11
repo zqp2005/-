@@ -24,6 +24,12 @@ public class AppRegisterRequest implements Serializable {
     /** 身份证号（选填） */
     private String idCard;
 
+    /** 性别（选填：Male/Female） */
+    private String ownerGender;
+
+    /** 年龄（选填） */
+    private Integer ownerAge;
+
     public String getPhone() {
         return phone;
     }
@@ -54,5 +60,21 @@ public class AppRegisterRequest implements Serializable {
 
     public void setIdCard(String idCard) {
         this.idCard = idCard;
+    }
+
+    public String getOwnerGender() {
+        return ownerGender;
+    }
+
+    public void setOwnerGender(String ownerGender) {
+        this.ownerGender = ownerGender;
+    }
+
+    public Integer getOwnerAge() {
+        return ownerAge;
+    }
+
+    public void setOwnerAge(Integer ownerAge) {
+        this.ownerAge = ownerAge;
     }
 }
