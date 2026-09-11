@@ -1,0 +1,51 @@
+# 合家云社区平台 - 云服务器部署编排
+# 前置条件（一次性，手动执行）：
+#   docker network create hjy-net
+#   docker network connect hjy-net mysql   # 复用服务器上已有的 mysql 容器
+#   docker network connect hjy-net redis   # 复用服务器上已有的 redis 容器
+# SQL 导入：docker exec -i mysql mysql -uroot -p{密码} < sql/hehjiayun.sql
+services:
+  community:
+    build: ./community
+    container_name: hjy-community
+    restart: always
+    environment:
+      MYSQL_HOST: mysql        # 指向复用的 mysql 容器
+      REDIS_HOST: redis        # 指向复用的 redis 容器
+    ports:
+      - "8080:8080"
+    networks: [hjy-net]
+
+  mcp-server:
+    build: ./mcp-server
+    container_name: hjy-mcp
+    restart: always
+    environment:
+      MYSQL_HOST: mysql
+    networks: [hjy-net]        # 仅内网，不对外暴露 8091
+
+  ai-service:
+    build: ./ai-service
+    container_name: hjy-ai
+    restart: always            # 启动时若 MCP/community 未就绪会退出，靠重启收敛
+    environment:
+      REDIS_HOST: redis
+      MCP_HOST: mcp-server
+      COMMUNITY_HOST: community
+    ports:
+      - "8090:8090"
+    depends_on: [community, mcp-server]
+    networks: [hjy-net]
+
+  frontend:
+    build: ./frontend
+    container_name: hjy-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on: [community, ai-service]
+    networks: [hjy-net]
+
+networks:
+  hjy-net:
+    external: true

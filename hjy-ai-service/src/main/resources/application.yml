@@ -37,13 +37,13 @@ spring:
         sse:
           connections:
             hjy-context:                       # 连接名（任意）
-              url: http://127.0.0.1:8091       # hjy-mcp-server 基础地址（不要带 /sse，端点会自动拼接）
+              url: http://${MCP_HOST:127.0.0.1}:8091  # hjy-mcp-server 基础地址（不要带 /sse，容器化时指向 mcp 容器）
               sse-endpoint: /sse               # SSE 端点（与服务端 spring.ai.mcp.server.sse-endpoint 一致）
 
   # Redis 配置
   data:
     redis:
-      host: 127.0.0.1   # Redis 服务器地址
+      host: ${REDIS_HOST:localhost}  # Redis 服务器地址（容器化时指向 redis 容器）
       port: 6379        # Redis 服务器端口号
       password:         # Redis 密码（无密码则为空）
       database: 0       # 使用的 Redis 数据库编号
@@ -84,7 +84,7 @@ hjy:
 
     # hjy-community 后端对接配置
     hjy-community:
-      base-url: http://localhost:8080                                      # hjy-community 后端地址
+      base-url: http://${COMMUNITY_HOST:localhost}:8080                     # hjy-community 后端地址（容器化时指向 community 容器）
       admin-username: ${HJY_COMMUNITY_ADMIN_USER:admin}                    # 管理员用户名（默认 admin）
       admin-password: ${HJY_COMMUNITY_ADMIN_PASSWORD:admin123}            # 管理员密码（默认 admin123）
       api-token: ${HJY_COMMUNITY_API_TOKEN:}                               # 自定义 API Token（可选）

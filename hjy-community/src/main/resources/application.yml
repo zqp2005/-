@@ -44,7 +44,7 @@ spring:
   # redis ??
   redis:
     # ??
-    host: localhost
+    host: ${REDIS_HOST:localhost}
     # ??????6379
     port: 6379
     # ??

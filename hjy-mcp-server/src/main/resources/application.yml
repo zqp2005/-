@@ -9,7 +9,8 @@ spring:
   # 数据源：与 hjy-community / hjy-ai-service 共享同一 MySQL 库
   # 真实账号密码在 application-local.yml（被 .gitignore 排除）中通过占位符变量提供
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/hehjiayun_community?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=GMT%2B8
+    # MYSQL_HOST 默认 127.0.0.1（本地开发），容器化部署时通过环境变量指向 mysql 容器
+    url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:3306/hehjiayun_community?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=GMT%2B8
     username: ${MYSQL_USERNAME}
     password: ${MYSQL_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
