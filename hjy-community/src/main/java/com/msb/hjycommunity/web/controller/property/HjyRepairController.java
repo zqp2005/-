@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.property.domain.dto.HjyRepairExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
@@ -25,6 +31,21 @@ public class HjyRepairController extends BaseController {
 
     @Resource
     private HjyRepairService repairService;
+
+    /**
+     * 导出报修工单数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjyRepair repair, HttpServletResponse response) {
+        List<HjyRepair> list = repairService.selectRepairList(repair);
+        List<HjyRepairExcelDto> dtoList = list.stream().map(item -> {
+            HjyRepairExcelDto dto = new HjyRepairExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjyRepairExcelDto.class, "报修工单.xls", response,
+                new ExportParams("报修工单列表", "报修工单"));
+    }
 
     /**
      * 获取报修列表

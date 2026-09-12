@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.community;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.community.domain.dto.HjyCommunityExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.page.PageResult;
 import com.msb.hjycommunity.common.enums.BusinessType;
@@ -29,6 +35,21 @@ public class HjyCommunityController extends BaseController {
 
     @Resource
     private HjyCommunityService hjyCommunityService;
+
+    /**
+     * 导出小区数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjyCommunity hjyCommunity, HttpServletResponse response) {
+        List<HjyCommunityDto> list = hjyCommunityService.queryList(hjyCommunity);
+        List<HjyCommunityExcelDto> dtoList = list.stream().map(item -> {
+            HjyCommunityExcelDto dto = new HjyCommunityExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjyCommunityExcelDto.class, "小区信息.xls", response,
+                new ExportParams("小区信息列表", "小区信息"));
+    }
 
     /**
      * 多条件分页查询

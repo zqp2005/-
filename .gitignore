@@ -24,3 +24,7 @@ generate-pptx.js
 
 # Playwright debug artifacts
 .playwright-mcp/
+
+# Deploy: SQL dump 与上传用 jar 不入库（含真实业务数据）
+deploy/sql/*.gz
+deploy/*/app.jar

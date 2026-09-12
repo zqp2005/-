@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.property.domain.dto.HjySuggestExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
@@ -25,6 +31,21 @@ public class HjySuggestController extends BaseController {
 
     @Resource
     private HjySuggestService suggestService;
+
+    /**
+     * 导出投诉建议数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjySuggest suggest, HttpServletResponse response) {
+        List<HjySuggest> list = suggestService.selectSuggestList(suggest);
+        List<HjySuggestExcelDto> dtoList = list.stream().map(item -> {
+            HjySuggestExcelDto dto = new HjySuggestExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjySuggestExcelDto.class, "投诉建议.xls", response,
+                new ExportParams("投诉建议列表", "投诉建议"));
+    }
 
     /**
      * 获取投诉建议列表

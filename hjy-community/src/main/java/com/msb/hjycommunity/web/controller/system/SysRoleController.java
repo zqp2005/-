@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.system.domain.dto.SysRoleExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.constant.UserConstants;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
@@ -28,6 +34,21 @@ public class SysRoleController extends BaseController {
 
     @Autowired
     private SysRoleService roleService;
+
+    /**
+     * 导出角色信息数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(SysRole role, HttpServletResponse response) {
+        List<SysRole> list = roleService.selectRoleList(role);
+        List<SysRoleExcelDto> dtoList = list.stream().map(item -> {
+            SysRoleExcelDto dto = new SysRoleExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysRoleExcelDto.class, "角色信息.xls", response,
+                new ExportParams("角色信息列表", "角色信息"));
+    }
 
     @Autowired
     private TokenService tokenService;

@@ -1,5 +1,10 @@
 package com.msb.hjycommunity.web.controller.monitor;
 
+import java.util.stream.Collectors;
+import com.msb.hjycommunity.monitor.domain.dto.SysJobExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -92,11 +97,18 @@ public class SysJobController extends BaseController {
     }
 
     /**
-     * 导出定时任务
+     * 导出定时任务（Excel流下载）
      */
     @GetMapping("/export")
     @PreAuthorize("@pe.hasPerms('monitor:job:export')")
     public void export(SysJob job, HttpServletResponse response) {
-        jobService.export(job, response);
+        List<SysJob> list = jobService.selectJobList(job);
+        List<SysJobExcelDto> dtoList = list.stream().map(item -> {
+            SysJobExcelDto dto = new SysJobExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysJobExcelDto.class, "定时任务.xls", response,
+                new ExportParams("定时任务列表", "定时任务"));
     }
 }

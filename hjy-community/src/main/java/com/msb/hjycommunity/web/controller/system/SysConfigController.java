@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.system.domain.dto.SysConfigExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -21,6 +27,21 @@ public class SysConfigController extends BaseController {
 
     @Resource
     private SysConfigService configService;
+
+    /**
+     * 导出参数配置数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(SysConfig config, HttpServletResponse response) {
+        List<SysConfig> list = configService.selectConfigList(config);
+        List<SysConfigExcelDto> dtoList = list.stream().map(item -> {
+            SysConfigExcelDto dto = new SysConfigExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysConfigExcelDto.class, "参数配置.xls", response,
+                new ExportParams("参数配置列表", "参数配置"));
+    }
 
     /**
      * 获取参数配置列表
