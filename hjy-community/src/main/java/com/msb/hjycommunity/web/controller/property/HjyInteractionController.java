@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.property.domain.dto.HjyInteractionExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -24,6 +30,21 @@ public class HjyInteractionController extends BaseController {
 
     @Resource
     private HjyInteractionService interactionService;
+
+    /**
+     * 导出社区互动数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjyInteraction interaction, HttpServletResponse response) {
+        List<HjyInteraction> list = interactionService.selectInteractionList(interaction);
+        List<HjyInteractionExcelDto> dtoList = list.stream().map(item -> {
+            HjyInteractionExcelDto dto = new HjyInteractionExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjyInteractionExcelDto.class, "社区互动.xls", response,
+                new ExportParams("社区互动列表", "社区互动"));
+    }
 
     /**
      * 获取互动列表

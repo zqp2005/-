@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.property.domain.dto.HjyOwnerRoomExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
@@ -26,6 +32,21 @@ public class HjyOwnerRoomController extends BaseController {
 
     @Resource
     private HjyOwnerRoomService ownerRoomService;
+
+    /**
+     * 导出业主房屋绑定数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjyOwnerRoom ownerRoom, HttpServletResponse response) {
+        List<HjyOwnerRoom> list = ownerRoomService.selectOwnerRoomList(ownerRoom);
+        List<HjyOwnerRoomExcelDto> dtoList = list.stream().map(item -> {
+            HjyOwnerRoomExcelDto dto = new HjyOwnerRoomExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjyOwnerRoomExcelDto.class, "业主房屋绑定.xls", response,
+                new ExportParams("业主房屋绑定列表", "业主房屋绑定"));
+    }
 
     /**
      * 获取房屋绑定列表

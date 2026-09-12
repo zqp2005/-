@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.system.domain.dto.SysDictTypeExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.constant.UserConstants;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
@@ -22,6 +28,21 @@ public class SysDictTypeController extends BaseController {
 
     @Autowired
     private SysDictTypeService sysDictTypeService;
+
+    /**
+     * 导出字典类型数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(SysDictType dictType, HttpServletResponse response) {
+        List<SysDictType> list = sysDictTypeService.selectDictTypeList(dictType);
+        List<SysDictTypeExcelDto> dtoList = list.stream().map(item -> {
+            SysDictTypeExcelDto dto = new SysDictTypeExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysDictTypeExcelDto.class, "字典类型.xls", response,
+                new ExportParams("字典类型列表", "字典类型"));
+    }
 
     /**
      * 多条件分页查询字典类型数据

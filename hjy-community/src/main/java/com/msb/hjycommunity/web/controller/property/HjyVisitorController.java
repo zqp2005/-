@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.property.domain.dto.HjyVisitorExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -21,6 +27,21 @@ public class HjyVisitorController extends BaseController {
 
     @Resource
     private HjyVisitorService visitorService;
+
+    /**
+     * 导出访客信息数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjyVisitor visitor, HttpServletResponse response) {
+        List<HjyVisitor> list = visitorService.selectVisitorList(visitor);
+        List<HjyVisitorExcelDto> dtoList = list.stream().map(item -> {
+            HjyVisitorExcelDto dto = new HjyVisitorExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjyVisitorExcelDto.class, "访客信息.xls", response,
+                new ExportParams("访客信息列表", "访客信息"));
+    }
 
     /**
      * 获取访客列表

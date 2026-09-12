@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.property.domain.dto.HjyOwnerExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
@@ -23,6 +29,21 @@ public class HjyOwnerController extends BaseController {
 
     @Resource
     private HjyOwnerService ownerService;
+
+    /**
+     * 导出业主信息数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjyOwner owner, HttpServletResponse response) {
+        List<HjyOwner> list = ownerService.selectOwnerList(owner);
+        List<HjyOwnerExcelDto> dtoList = list.stream().map(item -> {
+            HjyOwnerExcelDto dto = new HjyOwnerExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjyOwnerExcelDto.class, "业主信息.xls", response,
+                new ExportParams("业主信息列表", "业主信息"));
+    }
 
     /**
      * 获取业主列表

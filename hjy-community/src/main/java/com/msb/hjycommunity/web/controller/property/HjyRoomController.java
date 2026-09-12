@@ -1,5 +1,11 @@
 package com.msb.hjycommunity.web.controller.property;
 
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.property.domain.dto.HjyRoomExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.annotation.Log;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
@@ -24,6 +30,21 @@ public class HjyRoomController extends BaseController {
 
     @Resource
     private HjyRoomService roomService;
+
+    /**
+     * 导出房间信息数据（Excel流下载）
+     */
+    @GetMapping("/export")
+    public void export(HjyRoom room, HttpServletResponse response) {
+        List<HjyRoom> list = roomService.selectRoomList(room);
+        List<HjyRoomExcelDto> dtoList = list.stream().map(item -> {
+            HjyRoomExcelDto dto = new HjyRoomExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, HjyRoomExcelDto.class, "房间信息.xls", response,
+                new ExportParams("房间信息列表", "房间信息"));
+    }
 
     /**
      * 获取房间列表

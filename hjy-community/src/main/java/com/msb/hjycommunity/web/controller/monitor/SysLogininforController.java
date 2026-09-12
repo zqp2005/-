@@ -1,5 +1,10 @@
 package com.msb.hjycommunity.web.controller.monitor;
 
+import java.util.stream.Collectors;
+import com.msb.hjycommunity.monitor.domain.dto.SysLogininforExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -52,11 +57,18 @@ public class SysLogininforController extends BaseController {
     }
 
     /**
-     * 导出登录日志
+     * 导出登录日志（Excel流下载）
      */
     @GetMapping("/export")
     @PreAuthorize("@pe.hasPerms('monitor:logininfor:export')")
     public void export(SysLogininfor logininfor, HttpServletResponse response) {
-        logininforService.export(logininfor, response);
+        List<SysLogininfor> list = logininforService.selectLogininforList(logininfor);
+        List<SysLogininforExcelDto> dtoList = list.stream().map(item -> {
+            SysLogininforExcelDto dto = new SysLogininforExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysLogininforExcelDto.class, "登录日志.xls", response,
+                new ExportParams("登录日志列表", "登录日志"));
     }
 }

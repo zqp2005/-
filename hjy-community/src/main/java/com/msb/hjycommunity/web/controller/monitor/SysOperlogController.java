@@ -1,5 +1,10 @@
 package com.msb.hjycommunity.web.controller.monitor;
 
+import java.util.stream.Collectors;
+import com.msb.hjycommunity.monitor.domain.dto.SysOperlogExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -53,11 +58,18 @@ public class SysOperlogController extends BaseController {
     }
 
     /**
-     * 导出操作日志
+     * 导出操作日志（Excel流下载）
      */
     @GetMapping("/export")
     @PreAuthorize("@pe.hasPerms('monitor:operlog:export')")
     public void export(SysOperlog operlog, HttpServletResponse response) {
-        operlogService.export(operlog, response);
+        List<SysOperlog> list = operlogService.selectOperlogList(operlog);
+        List<SysOperlogExcelDto> dtoList = list.stream().map(item -> {
+            SysOperlogExcelDto dto = new SysOperlogExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysOperlogExcelDto.class, "操作日志.xls", response,
+                new ExportParams("操作日志列表", "操作日志"));
     }
 }

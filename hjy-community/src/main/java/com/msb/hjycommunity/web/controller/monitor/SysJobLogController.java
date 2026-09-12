@@ -1,5 +1,10 @@
 package com.msb.hjycommunity.web.controller.monitor;
 
+import java.util.stream.Collectors;
+import com.msb.hjycommunity.monitor.domain.dto.SysJobLogExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -61,11 +66,18 @@ public class SysJobLogController extends BaseController {
     }
 
     /**
-     * 导出调度日志
+     * 导出调度日志（Excel流下载）
      */
     @GetMapping("/export")
     @PreAuthorize("@pe.hasPerms('monitor:jobLog:export')")
     public void export(SysJobLog jobLog, HttpServletResponse response) {
-        jobLogService.export(jobLog, response);
+        List<SysJobLog> list = jobLogService.selectJobLogList(jobLog);
+        List<SysJobLogExcelDto> dtoList = list.stream().map(item -> {
+            SysJobLogExcelDto dto = new SysJobLogExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysJobLogExcelDto.class, "调度日志.xls", response,
+                new ExportParams("调度日志列表", "调度日志"));
     }
 }
