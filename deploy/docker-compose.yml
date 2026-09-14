@@ -12,8 +12,9 @@ services:
     environment:
       MYSQL_HOST: mysql        # 指向复用的 mysql 容器
       REDIS_HOST: redis        # 指向复用的 redis 容器
-    ports:
-      - "8080:8080"
+    # 2026-09-14 起阿里云对未备案 IP 封禁公网 80 端口，前端入口换到 8080，
+    # community 不再映射宿主机端口（nginx 反代走容器内网 community:8080 不受影响；
+    # 小程序将来切云时再单独开映射）
     networks: [hjy-net]
 
   mcp-server:
@@ -42,7 +43,7 @@ services:
     container_name: hjy-frontend
     restart: always
     ports:
-      - "80:80"
+      - "8080:80"              # 公网 80 被阿里云未备案封禁，前端入口改为 8080
     depends_on: [community, ai-service]
     networks: [hjy-net]
 
