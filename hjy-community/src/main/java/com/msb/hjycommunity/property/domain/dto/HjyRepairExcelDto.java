@@ -20,8 +20,8 @@ public class HjyRepairExcelDto implements Serializable {
     @Excel(name = "工单号")
     private String repairNum;
 
-    @Excel(name = "状态", replace = {"待处理_Pending", "已分派_Assigned", "处理中_Processing",
-            "已处理_Completed", "已取消_Cancelled", "不处理_Rejected"})
+    @Excel(name = "状态", replace = {"待处理_Pending", "已分派_Allocated", "处理中_Processing",
+            "已处理_Processed", "已取消_Cancelled", "不处理_No_Processed"})
     private String repairState;
 
     @Excel(name = "业主姓名")
