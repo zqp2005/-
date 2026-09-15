@@ -56,9 +56,15 @@ public class ExcelUtils {
             log.error("导出Excel异常: {}" ,e.getMessage());
             throw new BaseException("500","导出Excel失败,请联系网站管理员!");
         }finally {
+            // getOutputStream() 失败时 outputStream 为 null，判空防止 finally 里的
+            // NPE 掩盖真正的导出异常
             try {
-                outputStream.close();
-                workbook.close();
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+                if (workbook != null) {
+                    workbook.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

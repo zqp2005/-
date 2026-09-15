@@ -20,7 +20,7 @@ public class SysNoticeExcelDto implements Serializable {
     @Excel(name = "公告标题")
     private String noticeTitle;
 
-    @Excel(name = "公告类型")
+    @Excel(name = "公告类型", replace = {"通知_1", "公告_2"})
     private String noticeType;
 
     @Excel(name = "状态", replace = {"正常_0", "关闭_1"})

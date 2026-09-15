@@ -1,5 +1,7 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import com.msb.hjycommunity.common.enums.BusinessType;
+import com.msb.hjycommunity.common.annotation.Log;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import com.msb.hjycommunity.system.domain.dto.SysNoticeExcelDto;
@@ -32,6 +34,8 @@ public class SysNoticeController extends BaseController {
      * 导出通知公告（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:notice:export')")
+    @Log(title = "通知公告", businessType = BusinessType.EXPORT)
     public void export(SysNotice notice, HttpServletResponse response) {
         List<SysNotice> list = noticeService.selectNoticeList(notice);
         List<SysNoticeExcelDto> dtoList = list.stream().map(item -> {
