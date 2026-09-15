@@ -1,5 +1,13 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import com.msb.hjycommunity.common.enums.BusinessType;
+import com.msb.hjycommunity.common.annotation.Log;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletResponse;
+import com.msb.hjycommunity.system.domain.dto.SysNoticeExcelDto;
+import org.springframework.beans.BeanUtils;
+import com.msb.hjycommunity.common.utils.ExcelUtils;
+import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.core.page.PageResult;
@@ -21,6 +29,23 @@ public class SysNoticeController extends BaseController {
 
     @Resource
     private SysNoticeService noticeService;
+
+    /**
+     * 导出通知公告（Excel流下载）
+     */
+    @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:notice:export')")
+    @Log(title = "通知公告", businessType = BusinessType.EXPORT)
+    public void export(SysNotice notice, HttpServletResponse response) {
+        List<SysNotice> list = noticeService.selectNoticeList(notice);
+        List<SysNoticeExcelDto> dtoList = list.stream().map(item -> {
+            SysNoticeExcelDto dto = new SysNoticeExcelDto();
+            BeanUtils.copyProperties(item, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        ExcelUtils.exportExcel(dtoList, SysNoticeExcelDto.class, "通知公告.xls", response,
+                new ExportParams("通知公告列表", "通知公告"));
+    }
 
     /**
      * 获取通知公告列表

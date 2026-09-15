@@ -86,3 +86,7 @@ UPDATE sys_dict_data SET dict_label = '已处理' WHERE dict_type = 'hjy_complai
 -- 8) 普通角色(common)收窄为只读：移除全部写操作按钮权限，仅保留 query/list/export
 DELETE rm FROM sys_role_menu rm JOIN sys_menu m ON rm.menu_id = m.menu_id
 WHERE rm.role_id = 2 AND m.menu_type = 'F' AND m.perms NOT REGEXP ':(query|list|export)$';
+
+-- 2026-09-15 code-review修复配套：通知导出按钮权限（配合后端@PreAuthorize system:notice:export）
+INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
+SELECT 1040, '通知导出', parent_id, 5, '', '', 1, 0, 'F', '0', '0', 'system:notice:export', '#', 'admin', NOW(), '通知公告导出按钮权限' FROM sys_menu WHERE menu_id = 1037;
