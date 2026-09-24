@@ -311,12 +311,11 @@ public class OwnerInfoTool {
     /** 格式化性别为中文 */
     private String formatGender(String gender) {
         if (gender == null || gender.isEmpty()) return "未知";
-        return "M".equalsIgnoreCase(gender) ? "男" : "F".equalsIgnoreCase(gender) ? "女" : gender;
+        return "Male".equalsIgnoreCase(gender) ? "男" : "Female".equalsIgnoreCase(gender) ? "女" : "未知";
     }
 
     /** 格式化业主状态为中文 */
     private String formatStatus(String status) {
-        if (status == null || status.isEmpty()) return "正常";
-        return "0".equals(status) ? "正常" : "1".equals(status) ? "禁用" : status;
+        return "Enable".equals(status) ? "正常" : "Disable".equals(status) ? "停用" : "未知";
     }
 }

@@ -85,9 +85,7 @@ hjy:
     # hjy-community 后端对接配置
     hjy-community:
       base-url: http://localhost:8080                                      # hjy-community 后端地址
-      admin-username: ${HJY_COMMUNITY_ADMIN_USER:admin}                    # 管理员用户名（默认 admin）
-      admin-password: ${HJY_COMMUNITY_ADMIN_PASSWORD:admin123}            # 管理员密码（默认 admin123）
-      api-token: ${HJY_COMMUNITY_API_TOKEN:}                               # 自定义 API Token（可选）
+      # 业务请求透传调用者令牌，不再配置管理员凭据或共享 API Token。
 
 # 日志配置
 logging:

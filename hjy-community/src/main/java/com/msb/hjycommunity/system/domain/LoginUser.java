@@ -19,6 +19,11 @@ public class LoginUser implements UserDetails {
      */
     private String token;
 
+    private String credentialFingerprint;
+
+    public String getCredentialFingerprint() { return credentialFingerprint; }
+    public void setCredentialFingerprint(String value) { credentialFingerprint = value; }
+
     /**
      * 用户信息
      */

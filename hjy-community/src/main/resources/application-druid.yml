@@ -37,7 +37,7 @@ spring:
         enabled: true
       # Druid内置提供了一个StatViewServlet用于展示Druid的统计信息。
       statViewServlet:
-        enabled: true
+        enabled: false
         # 设置白名单，不填则允许所有访问
         allow:
         url-pattern: /druid/*

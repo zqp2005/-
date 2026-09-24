@@ -6,6 +6,8 @@ import com.msb.hjycommunity.common.utils.RedisCache;
 import com.msb.hjycommunity.common.utils.UUIDUtils;
 import com.msb.hjycommunity.framework.security.domain.AppOwnerToken;
 import com.msb.hjycommunity.property.domain.HjyOwner;
+import com.msb.hjycommunity.property.mapper.HjyOwnerMapper;
+import com.msb.hjycommunity.common.utils.SessionFingerprint;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -42,6 +44,9 @@ public class AppOwnerTokenService {
     @Autowired
     private RedisCache redisCache;
 
+    @Autowired
+    private HjyOwnerMapper ownerMapper;
+
     /** 请求头名称（与管理端一致，默认 Authorization） */
     @Value("${token.header}")
     private String header;
@@ -64,6 +69,7 @@ public class AppOwnerTokenService {
         ownerToken.setOwnerId(owner.getOwnerId());
         ownerToken.setPhone(owner.getOwnerPhoneNumber());
         ownerToken.setRealName(owner.getOwnerRealName());
+        ownerToken.setCredentialFingerprint(fingerprint(owner));
         ownerToken.setLoginTime(System.currentTimeMillis());
         ownerToken.setExpireTime(ownerToken.getLoginTime() + TOKEN_EXPIRE_MILLIS);
 
@@ -110,6 +116,16 @@ public class AppOwnerTokenService {
             if (ownerToken == null) {
                 return null;
             }
+            HjyOwner current = ownerMapper.selectOwnerById(ownerToken.getOwnerId());
+            if (current == null || !"Enable".equals(current.getOwnerStatus())
+                    || current.getOwnerPassword() == null
+                    || !fingerprint(current).equals(ownerToken.getCredentialFingerprint())
+                    || ownerToken.getExpireTime() == null || ownerToken.getExpireTime() <= System.currentTimeMillis()) {
+                redisCache.deleteObject(userKey);
+                return null;
+            }
+            ownerToken.setPhone(current.getOwnerPhoneNumber());
+            ownerToken.setRealName(current.getOwnerRealName());
             // 剩余不足1天时滑动续期
             if (ownerToken.getExpireTime() == null
                     || ownerToken.getExpireTime() - System.currentTimeMillis() <= RENEW_THRESHOLD_MILLIS) {
@@ -133,5 +149,10 @@ public class AppOwnerTokenService {
             token = token.replace(Constants.TOKEN_PREFIX, "");
         }
         return token;
+    }
+
+    private String fingerprint(HjyOwner owner) {
+        return SessionFingerprint.of(secret, owner.getOwnerId(), owner.getOwnerPassword(),
+                owner.getUpdateTime() == null ? null : owner.getUpdateTime().getTime());
     }
 }

@@ -17,6 +17,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
 
 /**
  * AI 服务 JWT 鉴权过滤器
@@ -52,6 +57,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     /** 与主后端 token.secret 一致的 JWT 签名密钥（真实值在 application-local.yml 或 TOKEN_SECRET 环境变量） */
     @Value("${hjy.ai.auth.token-secret:}")
     private String tokenSecret;
+
+    @Autowired private RestTemplate restTemplate;
+    @Value("${hjy.ai.hjy-community.base-url:http://localhost:8080}") private String communityUrl;
 
     public JwtAuthFilter(StringRedisTemplate stringRedisTemplate, ObjectMapper objectMapper) {
         this.stringRedisTemplate = stringRedisTemplate;
@@ -110,8 +118,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 writeUnauthorized(response, "未登录或登录已过期");
                 return;
             }
+            // 主后端检查账号实时状态/密码指纹，不能只凭 Redis key 存在放行。
+            HttpHeaders headers = new HttpHeaders();
+            headers.set(HttpHeaders.AUTHORIZATION, authHeader);
+            ResponseEntity<String> verified = restTemplate.exchange(communityUrl + "/getInfo",
+                    HttpMethod.GET, new HttpEntity<>(headers), String.class);
+            com.fasterxml.jackson.databind.JsonNode principal = objectMapper.readTree(verified.getBody());
+            if (!verified.getStatusCode().is2xxSuccessful() || principal.path("code").asInt() != 200
+                    || principal.path("user").path("userId").asLong(-1) != identity.userId) {
+                writeUnauthorized(response, "登录状态已变化，请重新登录");
+                return;
+            }
             request.setAttribute(ATTR_USER_ID, identity.userId);
-            request.setAttribute(ATTR_USER_NAME, identity.userName);
+            request.setAttribute(ATTR_USER_NAME, principal.path("user").path("userName").asText());
         } catch (Exception e) {
             // 验签失败、token 格式错误、claim 缺失等一律视为未认证
             log.warn("AI服务鉴权失败 - uri: {}, error: {}", uri, e.getMessage());

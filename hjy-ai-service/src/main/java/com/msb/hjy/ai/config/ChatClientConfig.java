@@ -7,6 +7,10 @@ import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.support.ToolCallbacks;
+import org.springframework.ai.tool.ToolCallback;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -76,15 +80,19 @@ public class ChatClientConfig {
                                  ObjectProvider<ToolCallbackProvider> mcpToolCallbackProvider) {
         ChatClient.Builder builder = ChatClient.builder(chatModel)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-                .defaultSystem(loadSystemPrompt())
-                .defaultTools(repairTool, complaintTool, propertyFeeTool, ownerInfoTool, announcementTool, communityTool);
+                .defaultSystem(loadSystemPrompt());
+        List<ToolCallback> callbacks = new ArrayList<>();
+        for (ToolCallback tool : ToolCallbacks.from(repairTool, complaintTool, propertyFeeTool,
+                ownerInfoTool, announcementTool, communityTool)) {
+            callbacks.add(new AuthorizedToolCallback(tool));
+        }
 
         // 注册 MCP 远程工具（query_login_location / query_weather 等），与本地六大工具同时生效
         ToolCallbackProvider mcpTools = mcpToolCallbackProvider.getIfAvailable();
         if (mcpTools != null) {
-            builder.defaultToolCallbacks(mcpTools);
+            for (ToolCallback tool : mcpTools.getToolCallbacks()) callbacks.add(new AuthorizedToolCallback(tool));
         }
-
+        builder.defaultToolCallbacks(callbacks.toArray(new ToolCallback[0]));
         return builder.build();
     }
 

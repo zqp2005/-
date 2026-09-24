@@ -35,12 +35,18 @@ public class ComplaintTool {
      */
     @Tool(description = "查询投诉建议列表，可以按状态或类型筛选。用于回答'投诉进度'、'我的建议'、'有哪些投诉'等问题")
     public String queryComplaints(
-            @ToolParam(description = "状态筛选：pending(待处理), processing(处理中), resolved(已解决), closed(已关闭)") String status,
-            @ToolParam(description = "类型筛选：service(服务态度), sanitation(环境卫生), facility(设施设备), noise(噪音), other(其他)") String type) {
+            @ToolParam(description = "状态：Pending、Processing、Replied、Closed") String status,
+            @ToolParam(description = "类型：Complaint(投诉)、Suggest(建议)") String type) {
         log.info("查询投诉列表 - status: {}, type: {}", status, type);
 
         try {
-            String result = communityClient.get("/system/suggest/list");
+            String normalizedStatus = "resolved".equalsIgnoreCase(status) ? "Replied" : status;
+            java.util.Map<String, Object> filters = new java.util.HashMap<>();
+            filters.put("pageNum", 1);
+            filters.put("pageSize", 5);
+            if (normalizedStatus != null && !normalizedStatus.isEmpty()) filters.put("complaintState", normalizedStatus);
+            if (type != null && !type.isEmpty()) filters.put("complaintSuggestType", type);
+            String result = communityClient.get("/system/suggest/list", filters);
             JsonNode root = objectMapper.readTree(result);
             JsonNode data = root.path("rows");
 
@@ -54,13 +60,13 @@ public class ComplaintTool {
             for (JsonNode item : data) {
                 if (count >= 5) break;
 
-                String suggestType = item.path("suggestType").asText();
-                String suggestState = item.path("suggestState").asText("Pending");
+                String suggestType = item.path("complaintSuggestType").asText();
+                String suggestState = item.path("complaintState").asText();
 
-                if (status != null && !status.isEmpty() && !suggestState.equalsIgnoreCase(status)) {
+                if (normalizedStatus != null && !normalizedStatus.isEmpty() && !suggestState.equalsIgnoreCase(normalizedStatus)) {
                     continue;
                 }
-                if (type != null && !type.isEmpty() && !suggestType.contains(type)) {
+                if (type != null && !type.isEmpty() && !suggestType.equalsIgnoreCase(type)) {
                     continue;
                 }
 
@@ -71,7 +77,7 @@ public class ComplaintTool {
                 sb.append("【投诉建议】\n");
                 sb.append("  单号：").append(item.path("complaintSuggestId").asText()).append("\n");
                 sb.append("  类型：").append(formatType(suggestType)).append("\n");
-                sb.append("  内容：").append(item.path("suggestContent").asText()).append("\n");
+                sb.append("  内容：").append(item.path("complaintSuggestContent").asText()).append("\n");
                 sb.append("  状态：").append(formatState(suggestState)).append("\n");
                 sb.append("  提交时间：").append(item.path("createTime").asText()).append("\n");
                 sb.append("\n");
@@ -82,7 +88,7 @@ public class ComplaintTool {
                 return "未找到符合条件的投诉建议\n";
             }
 
-            sb.append("共查询到 ").append(count).append(" 条记录\n");
+            sb.append("本页展示 ").append(count).append(" 条，共 ").append(root.path("total").asLong(count)).append(" 条记录\n");
             return sb.toString();
 
         } catch (Exception e) {
@@ -183,12 +189,12 @@ public class ComplaintTool {
             StringBuilder sb = new StringBuilder();
             sb.append("【投诉建议详情】\n");
             sb.append("  单号：").append(data.path("complaintSuggestId").asText()).append("\n");
-            sb.append("  姓名：").append(data.path("suggestName").asText()).append("\n");
-            sb.append("  联系电话：").append(data.path("suggestPhone").asText()).append("\n");
-            sb.append("  类型：").append(formatType(data.path("suggestType").asText())).append("\n");
-            sb.append("  内容：").append(data.path("suggestContent").asText()).append("\n");
-            sb.append("  地点：").append(data.path("suggestLocation").asText()).append("\n");
-            sb.append("  状态：").append(formatState(data.path("suggestState").asText())).append("\n");
+            sb.append("  姓名：").append(data.path("ownerRealName").asText()).append("\n");
+            sb.append("  联系电话：").append(data.path("ownerPhoneNumber").asText()).append("\n");
+            sb.append("  类型：").append(formatType(data.path("complaintSuggestType").asText())).append("\n");
+            sb.append("  内容：").append(data.path("complaintSuggestContent").asText()).append("\n");
+            sb.append("  状态：").append(formatState(data.path("complaintState").asText())).append("\n");
+            sb.append("  回复：").append(data.path("replyContent").asText()).append("\n");
             sb.append("  提交时间：").append(data.path("createTime").asText()).append("\n");
 
             return sb.toString();
@@ -203,6 +209,8 @@ public class ComplaintTool {
     private String formatType(String type) {
         if (type == null) return "未知";
         return switch (type.toLowerCase()) {
+            case "complaint" -> "投诉";
+            case "suggest" -> "建议";
             case "service" -> "服务态度";
             case "sanitation" -> "环境卫生";
             case "facility" -> "设施设备";
@@ -218,7 +226,7 @@ public class ComplaintTool {
         return switch (state.toLowerCase()) {
             case "pending" -> "待处理";
             case "processing" -> "处理中";
-            case "resolved" -> "已解决";
+            case "resolved", "replied" -> "已回复";
             case "closed" -> "已关闭";
             default -> state;
         };

@@ -1,5 +1,15 @@
 # 合家云社区 AI 智能服务
 
+## 2026-09-24 安全边界更新（以本节为准）
+
+- 不再使用管理员自动登录或共享 API Token；工具请求只透传当前已验证用户令牌，权限不足直接失败，不重登重试。
+- 服务端 ToolContext 只用于本地执行身份，不进入模型 JSON 参数，也不传播到远端 MCP。调用结束/异常后清除线程上下文。
+- 新增/取消等写操作在确认机制完成前拒绝，用户通过管理端/小程序业务页面提交；登录定位工具暂停，天气仍可查询。
+- 费用工具未接入账单，明确返回暂不可查询，不给出虚构欠费、费率、联系电话或支付入口。报修/投诉列表按后端字段服务端筛选后分页。
+- 与主后端配套部署：`/aiLogin` 已关闭，旧会话需重新登录；AI 入口调用主后端 `/getInfo` 验证账号实时状态。
+- 验证：`mvn test` 10 项通过（JWT 解析 5 项、工具授权/身份隔离/费用真实性 5 项），未调用外部模型、未写数据库。
+- 下文旧功能示例不代表写操作、真实收费、车辆/设施等未接入模块已开放；权限不足和未接入必须如实提示。
+
 基于 Spring AI 实现的社区物业智能助手服务，通过工具调用（Function Calling）对接 `hjy-community` 主后端获取真实业务数据，为业主提供智能客服对话。
 
 ## 技术栈
@@ -33,7 +43,7 @@ hjy-ai-service/
 │   │   ├── ChatService.java            # 对话服务接口
 │   │   └── impl/ChatServiceImpl.java   # 对话实现（含问候/帮助拦截）
 │   ├── client/                         # HTTP客户端
-│   │   └── HjyCommunityClient.java     # 调用社区系统API（自动登录 + 401重试）
+│   │   └── HjyCommunityClient.java     # 透传当前调用者令牌，不自动登录
 │   ├── tools/                          # 工具集（@Tool 注解，由 AI 自动调用）
 │   │   ├── RepairTool.java             # 报修工具
 │   │   ├── ComplaintTool.java          # 投诉工具
@@ -122,7 +132,7 @@ hjy-ai-service/
 
 - **系统提示词外置**：提示词文本在 `resources/prompt/system-prompt.txt`，修改提示词无需改代码
 - **Redis 会话持久化**：`RedisChatMemoryRepository` 将每个会话存为 Redis List（key 前缀 `ai:chat:memory:`），配合 `MessageWindowChatMemory` 保留最近 20 条消息，服务重启后历史不丢、多实例可共享
-- **Token 自动管理**：`HjyCommunityClient` 以管理员身份通过 `/aiLogin` 自动登录并缓存 JWT（25 分钟提前刷新）；请求遇到 401/403（含响应体业务码）时自动清缓存重登并重试一次
+- **Token 隔离**：`HjyCommunityClient` 透传当前用户 JWT；401/403 或业务失败直接拒绝，不共享管理员凭据，不自动重试写请求
 - **SSE 流式输出**：流式接口逐段输出 `data: {...}\n\n`，正常结束以 `data: [DONE]` 标记收尾，前端据此结束加载状态
 - **MCP 远程工具**：通过 `spring-ai-starter-mcp-client-webflux` 以 SSE 连接 `hjy-mcp-server`（默认 `http://127.0.0.1:8091`，见 `spring.ai.mcp.client.sse.connections.hjy-context`），自动注册远程工具 `query_login_location`（登录地址定位）和 `query_weather`（高德天气），与本地六大工具同时生效
 
@@ -144,12 +154,7 @@ API Key 通过环境变量注入：
 export DEEPSEEK_API_KEY=your-deepseek-api-key
 ```
 
-可选环境变量（覆盖 `application.yml` 中的默认值 admin/admin123）：
-
-```bash
-export HJY_COMMUNITY_ADMIN_USER=admin
-export HJY_COMMUNITY_ADMIN_PASSWORD=admin123
-```
+无需配置 `HJY_COMMUNITY_ADMIN_USER`、`HJY_COMMUNITY_ADMIN_PASSWORD` 或共享 API Token，旧值已不再使用。
 
 ### 3. 启动
 
@@ -211,7 +216,7 @@ data: [DONE]
 ## 与其他系统的对接
 
 - **前端 → 本服务**：前端开发服务器将 `/ai/*` 代理到本服务（8090），前端直接调用上述对话接口。
-- **本服务 → hjy-community**：`HjyCommunityClient` 以管理员身份调用主后端 `/aiLogin` 获取 JWT（免验证码），缓存后代理所有业务请求（报修、投诉、缴费、公告等），token 失效自动重登重试。
+- **本服务 → hjy-community**：`HjyCommunityClient` 透传调用者 JWT；主后端校验实时身份及操作权限。写操作暂不开放。
 
 ## 工具说明
 
@@ -227,7 +232,7 @@ data: [DONE]
 ## 后端API接口
 
 ### 认证方式
-所有请求需要 `Authorization: Bearer {token}` header，通过 `/aiLogin` 获取token
+所有业务请求需要 `Authorization: Bearer {token}`，使用管理端正常验证码登录获得的令牌；`/aiLogin` 已关闭。
 
 ### 报修服务
 | 接口 | 方法 | 路径 |
@@ -275,9 +280,7 @@ data: [DONE]
 | hjy.ai.temperature | 温度参数 | 0.7 |
 | hjy.ai.maxTokens | 最大令牌数 | 2000 |
 | hjy.ai.hjy-community.base-url | 社区系统地址 | http://localhost:8080 |
-| hjy.ai.hjy-community.admin-username | 管理员用户名 | admin（可用环境变量 HJY_COMMUNITY_ADMIN_USER 覆盖） |
-| hjy.ai.hjy-community.admin-password | 管理员密码 | admin123（可用环境变量 HJY_COMMUNITY_ADMIN_PASSWORD 覆盖） |
-| hjy.ai.hjy-community.api-token | 固定 API Token（配置后优先使用，跳过自动登录） | 空 |
+| 调用者认证 | 透传请求身份，不再配置服务管理员或固定 API Token | 必须正常登录 |
 
 ## 常见问题
 

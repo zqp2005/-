@@ -79,7 +79,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 //过滤请求
                 .authorizeRequests()
                 // 对于登录login 验证码captchaImage 允许匿名访问
-                .antMatchers("/login","/captchaImage","/aiLogin").anonymous()
+                .antMatchers("/aiLogin").denyAll()
+                .antMatchers("/login","/captchaImage").anonymous()
                 // 业主端（小程序）接口：放行 Spring Security，认证由 AppAuthFilter 自管（独立业主令牌）
                 .antMatchers("/app/**").permitAll()
                 // Swagger 相关资源放行
@@ -90,7 +91,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/webjars/**").anonymous()
                 .antMatchers("/swagger-ui/index.html").anonymous()
                 .antMatchers("/doc.html").anonymous()
-                .antMatchers("/druid/**").anonymous()
+                .antMatchers("/druid/**").denyAll()
                 // 除上面外的所有请求全部需要鉴权认证
                 .anyRequest().authenticated();
         http

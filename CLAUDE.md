@@ -37,7 +37,7 @@ cd hjy-ai-service
 mvn clean package -DskipTests          # 构建
 mvn spring-boot:run                    # 运行（端口 8090）
 ```
-需要环境变量 `DEEPSEEK_API_KEY`。连接主后端的管理员凭据默认 admin/admin123，可用 `HJY_COMMUNITY_ADMIN_USER` / `HJY_COMMUNITY_ADMIN_PASSWORD` 覆盖（见 `application.yml` 中 `hjy.ai.hjy-community.*`）。Docker 部署：`docker build -t hjy-ai-service .`。
+需要环境变量 `DEEPSEEK_API_KEY`。连接主后端时仅透传当前调用者令牌，不再配置共享管理员凭据；AI 写操作在确认流程上线前拒绝。Docker 部署：`docker build -t hjy-ai-service .`。
 
 ### hjy-mcp-server（MCP 工具服务）
 ```bash
@@ -93,8 +93,8 @@ MySQL 8，本地 `127.0.0.1:3306`，账号 root/123456（真实值在 `hjy-commu
 - **BaseController**（`common.core.controller.BaseController`）：提供 `getDataTable()` 用于分页响应，`startPage()` 用于启动 PageHelper 分页。所有控制器继承此类。
 - **统一响应**：`R<T>` 封装所有 API 返回，包含 code/message/data。`BaseResponse` 是其旧版替代方案。
 - **BaseEntity**：领域实体基类，通过 MyBatis-Plus 元对象处理器自动填充 `createTime`、`updateTime`、`createBy`、`updateBy`。
-- **安全认证（管理端）**：`SecurityConfig` 继承 `WebSecurityConfigurerAdapter`。`JwtAuthenticationTokenFilter` 对每个请求校验 JWT。`@PreAuthorize` 注解用于方法级权限控制。`/captcha`、`/login`、`/aiLogin` 无需认证即可访问。
-- **业主端接口（小程序）**：`web.controller.app` 包提供 `/app/**` 独立接口层（注册/登录、提交报修投诉、查自己的单）。Spring Security 对 `/app/**` `permitAll`，认证由 `AppAuthFilter` 自管：签发/校验**独立于管理端的业主 JWT**（Redis key `owner_tokens:{uuid}`，与管理端 `login_tokens` 完全隔离），注册白名单（register/login）、手机号/身份证正则校验，支持存量业主（密码为空）首次注册即激活。
+- **安全认证（管理端）**：`SecurityConfig` 继承 `WebSecurityConfigurerAdapter`。`JwtAuthenticationTokenFilter` 对每个请求校验 JWT。`@PreAuthorize` 注解用于方法级权限控制。`/captcha`、`/login` 无需认证即可访问；`/aiLogin` 与 `/druid/**` 已禁用。
+- **业主端接口（小程序）**：`web.controller.app` 包提供 `/app/**` 独立接口层（注册/登录、提交报修投诉、查自己的单）。Spring Security 对 `/app/**` `permitAll`，认证由 `AppAuthFilter` 自管：签发/校验**独立于管理端的业主 JWT**（Redis key `owner_tokens:{uuid}`，与管理端 `login_tokens` 完全隔离），注册白名单（register/login）、手机号/身份证正则校验，禁止凭自填资料激活存量空密码业主，暂需联系物业核验；每次请求复核账号状态、凭据指纹和有效期。
 - **MyBatis-Plus + PageHelper**：增删改查通过 MyBatis-Plus（`BaseMapper`），分页通过 PageHelper（`PageHelper.startPage()`），复杂查询在 `resources/mapper/**/*Mapper.xml` 中（按 monitor/property/system 模块组织）。
 - **DTO/VO 模式**：`domain/dto` 存放请求体，`domain/vo` 存放响应体。使用 Orika（`MapperFacade`）进行对象属性拷贝。
 - **业务状态机与动作接口**：报修（`RepairState`）与投诉（`SuggestState`）的状态流转只能通过动作端点驱动（报修 `assign/receive/complete/cancel/reject`，投诉 `accept/reply/close`，均为 `PUT .../动作/{id}`），非法转移抛 `CustomException` 并自动记录时间戳/操作人；普通 update 在 Service 层置空流转字段实现编辑降级。房屋绑定走审核流（Auditing→Binding/Rejected，审核/解绑在 `hjy_owner_room_record` 留痕并联动房间入住状态）。社区/楼栋/单元/房间/业主五级删除有级联校验，有下级数据整批拒绝。
@@ -118,7 +118,7 @@ Spring Boot 3.2.5 + Spring AI 1.0.0，使用 DeepSeek 模型（deepseek-chat）�
 | `controller/` | `ChatController` —— 对话 API（同步、流式 SSE、清除会话、健康检查），全部委托 Service |
 | `service/` | `ChatService` 接口 + `impl/ChatServiceImpl` —— 对话逻辑（同步与流式，含问候/帮助拦截与用户信息注入） |
 | `tools/` | 6 个工具类：`RepairTool`、`ComplaintTool`、`PropertyFeeTool`、`OwnerInfoTool`、`AnnouncementTool`、`CommunityTool` |
-| `client/` | `HjyCommunityClient` —— 调用 hjy-community API 的 REST 客户端（RestTemplate + JWT token，401 自动重登重试一次） |
+| `client/` | `HjyCommunityClient` —— 调用 hjy-community API 的 REST 客户端（RestTemplate，仅透传当前调用者 JWT，拒绝共享管理员身份与自动重登） |
 | `config/` | `ChatClientConfig`（ChatClient/ChatMemory Bean）、`RedisChatMemoryRepository`（Redis 会话存储）、`AiConfig`、`AiProperties`、`RedisConfig`、`WebConfig` |
 | `prompt/` | `PromptTemplate` —— 问候/帮助常量 |
 | `dto/` | `ChatRequest`、`ChatResponse` |
@@ -130,9 +130,9 @@ Spring Boot 3.2.5 + Spring AI 1.0.0，使用 DeepSeek 模型（deepseek-chat）�
 - `tools/` 包中的 `@Tool` 注解方法由 Spring AI 自动发现。AI 根据用户意图决定调用哪个工具。
 - **会话记忆持久化在 Redis**：`RedisChatMemoryRepository`（key `ai:chat:memory:{sessionId}`）+ `MessageWindowChatMemory`（20 条窗口），重启不丢会话。
 - Controller 统一走 Service 调用链（同步与流式的拦截逻辑、用户信息注入都在 `ChatServiceImpl`）；SSE 每元素 `data: xxx\n\n`，正常结束以 `data: [DONE]` 收尾。
-- `HjyCommunityClient` 以管理员身份自动登录（走 `/aiLogin` 免验证码接口），缓存 JWT token，代理请求到 hjy-community 获取真实数据（报修、投诉、缴费等）。
+- `HjyCommunityClient` 只以当前调用者令牌查询主后端；工具边界恢复/清理线程身份，查询失败不得当作空列表。真实账单未上线，不生成欠费金额；AI 写操作暂拒绝。
 - WebFlux 实现流式对话（SSE），端点：`POST /ai/chat`、`POST /ai/chat/stream`、`DELETE /ai/session/{sessionId}`、`GET /ai/health`。
-- 无单元测试。
+- 单元测试覆盖 JWT 解析、工具身份隔离、调用者令牌透传与拒绝写操作。
 
 ## 架构：hejiayun_ui（前端，实际位置 D:\Uilted\hjy_ui\hejiayun_ui）
 

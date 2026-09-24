@@ -33,6 +33,11 @@ public class AppOwnerToken implements Serializable {
     /** 过期时间（毫秒） */
     private Long expireTime;
 
+    private String credentialFingerprint;
+
+    public String getCredentialFingerprint() { return credentialFingerprint; }
+    public void setCredentialFingerprint(String value) { credentialFingerprint = value; }
+
     public String getToken() {
         return token;
     }

@@ -39,12 +39,19 @@ public class RepairTool {
      */
     @Tool(description = "查询报修工单列表，可以按状态或业主名筛选。用于回答'报修进度'、'我的报修'、'有哪些报修'等问题")
     public String queryRepairOrders(
-            @ToolParam(description = "报修状态筛选：pending(待处理), allocated(已派单), processing(处理中), completed(已完成), rated(已评价)") String status,
+            @ToolParam(description = "报修状态：Pending、Allocated、Processing、Processed、Cancelled、No_Processed") String status,
             @ToolParam(description = "业主姓名，用于筛选特定业主的报修单") String ownerName) {
         log.info("查询报修工单 - status: {}, ownerName: {}", status, ownerName);
 
         try {
-            String result = communityClient.get("/system/repair/list");
+            String normalizedStatus = status == null ? "" : status.trim();
+            if ("completed".equalsIgnoreCase(normalizedStatus)) normalizedStatus = "Processed";
+            Map<String, Object> filters = new java.util.HashMap<>();
+            filters.put("pageNum", 1);
+            filters.put("pageSize", 5);
+            if (!normalizedStatus.isEmpty()) filters.put("repairState", normalizedStatus);
+            if (ownerName != null && !ownerName.isEmpty()) filters.put("ownerRealName", ownerName);
+            String result = communityClient.get("/system/repair/list", filters);
             JsonNode root = objectMapper.readTree(result);
             JsonNode data = root.path("rows");
 
@@ -61,7 +68,7 @@ public class RepairTool {
                 String repairState = item.path("repairState").asText();
                 String itemOwnerName = item.path("ownerRealName").asText("未知");
 
-                if (status != null && !status.isEmpty() && !repairState.equalsIgnoreCase(status)) {
+                if (!normalizedStatus.isEmpty() && !repairState.equalsIgnoreCase(normalizedStatus)) {
                     continue;
                 }
                 if (ownerName != null && !ownerName.isEmpty() && !itemOwnerName.contains(ownerName)) {
@@ -86,7 +93,7 @@ public class RepairTool {
                 return "未找到符合条件的报修工单\n";
             }
 
-            sb.append("共查询到 ").append(count).append(" 条报修记录\n");
+            sb.append("本页展示 ").append(count).append(" 条，共 ").append(root.path("total").asLong(count)).append(" 条报修记录\n");
             sb.append("\n如需了解更多信息，请告诉我具体工单号。");
             return sb.toString();
 
@@ -251,8 +258,7 @@ public class RepairTool {
             case "pending" -> "待处理";
             case "allocated" -> "已派单";
             case "processing" -> "处理中";
-            case "processed" -> "已处理";
-            case "completed" -> "已完成";
+            case "completed", "processed" -> "已完成";
             case "rated" -> "已评价";
             case "cancelled" -> "已取消";
             default -> state;

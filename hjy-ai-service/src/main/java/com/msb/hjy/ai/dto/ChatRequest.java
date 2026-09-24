@@ -2,6 +2,8 @@ package com.msb.hjy.ai.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * 聊天请求 DTO
@@ -28,6 +30,11 @@ public class ChatRequest {
 
     /** 用户姓名 */
     private String userName;
+
+    /** 由 Controller 从已验证请求写入，禁止客户端注入或日志输出。 */
+    @JsonIgnore
+    @ToString.Exclude
+    private String callerAuthorization;
 
     /** 获取显示名称，未设置时默认显示"业主" */
     public String getDisplayName() {

@@ -6,6 +6,10 @@ import com.msb.hjycommunity.common.utils.RedisCache;
 import com.msb.hjycommunity.common.utils.UUIDUtils;
 import com.msb.hjycommunity.system.domain.LoginUser;
 import com.msb.hjycommunity.system.service.TokenService;
+import com.msb.hjycommunity.system.mapper.SysUserMapper;
+import com.msb.hjycommunity.system.domain.SysUser;
+import com.msb.hjycommunity.framework.service.SysPermissionService;
+import com.msb.hjycommunity.common.utils.SessionFingerprint;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -28,6 +32,12 @@ public class TokenServiceImpl implements TokenService {
 
     @Autowired
     private RedisCache redisCache;
+
+    @Autowired
+    private SysUserMapper userMapper;
+
+    @Autowired
+    private SysPermissionService permissionService;
 
     //令牌自定义标识
     @Value("${token.header}")
@@ -61,6 +71,7 @@ public class TokenServiceImpl implements TokenService {
         //设置用户的唯一标识
         String userKey = UUIDUtils.randomUUID();
         loginUser.setToken(userKey);
+        loginUser.setCredentialFingerprint(fingerprint(loginUser.getUser()));
 
         //todo 保存用户信息 刷新令牌
         refreshToken(loginUser);
@@ -107,6 +118,7 @@ public class TokenServiceImpl implements TokenService {
 //
 @Override
 public LoginUser getLoginUser(HttpServletRequest request) {
+    try {
     String token = getToken(request);
     if(!StringUtils.isEmpty(token)){
         Claims claims = parseToken(token);
@@ -119,13 +131,32 @@ public LoginUser getLoginUser(HttpServletRequest request) {
         String jsonString = redisCache.getStringValue(userKey);
         if (jsonString != null && !jsonString.isEmpty()) {
             LoginUser loginUser = JSON.parseObject(jsonString, LoginUser.class);
+            if (loginUser == null || loginUser.getUser() == null) return null;
+            SysUser current = userMapper.selectUserById(loginUser.getUser().getUserId());
+            if (current == null || !"0".equals(current.getStatus()) || !"0".equals(current.getDelFlag())
+                    || current.getPassword() == null
+                    || !fingerprint(current).equals(loginUser.getCredentialFingerprint())
+                    || loginUser.getExpireTime() == null || loginUser.getExpireTime() <= System.currentTimeMillis()) {
+                redisCache.deleteObject(userKey);
+                return null;
+            }
+            loginUser.setUser(current);
+            loginUser.setPermissions(permissionService.getMenuPermission(current));
             return loginUser;
         }
 
         return null;
     }
     return null;
+    } catch (Exception invalidSession) {
+        return null;
+    }
 }
+
+    private String fingerprint(SysUser user) {
+        return SessionFingerprint.of(secret, user.getUserId(), user.getPassword(),
+                user.getUpdateTime() == null ? null : user.getUpdateTime().getTime());
+    }
     @Override
     public void verifyToken(LoginUser loginUser) {
         Long expireTime = loginUser.getExpireTime();

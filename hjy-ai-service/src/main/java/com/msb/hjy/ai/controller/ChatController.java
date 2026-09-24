@@ -92,6 +92,7 @@ public class ChatController {
      * 覆盖到请求体上，防止伪造请求体中的用户信息冒充他人
      */
     private void fillUserIdentity(ChatRequest request, HttpServletRequest servletRequest) {
+        request.setCallerAuthorization(servletRequest.getHeader("Authorization"));
         Object userId = servletRequest.getAttribute(JwtAuthFilter.ATTR_USER_ID);
         if (userId instanceof Long) {
             request.setUserId((Long) userId);

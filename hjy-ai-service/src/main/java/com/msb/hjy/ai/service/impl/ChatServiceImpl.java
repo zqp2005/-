@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.Set;
+import java.util.Map;
+import com.msb.hjy.ai.client.CallerContext;
 
 /**
  * 聊天服务实现类
@@ -71,6 +73,7 @@ public class ChatServiceImpl implements ChatService {
             String userMessage = buildUserMessage(request);
 
             String response = chatClient.prompt()
+                    .toolContext(callerContext(request))
                     .user(userMessage)
                     .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId(request)))
                     .call()
@@ -102,6 +105,7 @@ public class ChatServiceImpl implements ChatService {
         }
 
         return chatClient.prompt()
+                .toolContext(callerContext(request))
                 .user(buildUserMessage(request))
                 .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId(request)))
                 .stream()
@@ -137,5 +141,13 @@ public class ChatServiceImpl implements ChatService {
      */
     private String conversationId(ChatRequest request) {
         return request.getUserId() + ":" + request.getSessionId();
+    }
+
+    private Map<String, Object> callerContext(ChatRequest request) {
+        String authorization = request.getCallerAuthorization();
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new IllegalStateException("缺少可信调用者身份");
+        }
+        return Map.of(CallerContext.AUTHORIZATION, authorization);
     }
 }
