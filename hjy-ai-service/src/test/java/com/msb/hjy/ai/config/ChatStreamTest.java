@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 class ChatStreamTest {
     @Test void greetingReturnsRawTextAndDoneNotNestedSseFrames() {
-        ChatServiceImpl service = new ChatServiceImpl(null, null, new PromptTemplate());
+        ChatServiceImpl service = new ChatServiceImpl(null, null, new PromptTemplate(), null);
         ChatRequest request = new ChatRequest(); request.setMessage("你好");
         List<String> result = service.chatStream(request).collectList().block();
         assertEquals(2, result.size()); assertEquals("[DONE]", result.get(1));

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.util.UriComponentsBuilder;
 import java.util.Map;
 
@@ -45,7 +46,29 @@ public class HjyCommunityClient {
     }
 
     public String post(String path, Map<String, Object> body) {
-        return "{\"code\":403,\"msg\":\"请到业务页面确认并提交，AI写操作尚未开放\"}";
+        return write(path, body, HttpMethod.POST);
     }
-    public String put(String path, Map<String, Object> body) { return post(path, body); }
+
+    public String put(String path, Map<String, Object> body) {
+        return write(path, body, HttpMethod.PUT);
+    }
+
+    private String write(String path, Map<String, Object> body, HttpMethod method) {
+        String authorization = CallerContext.current();
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw new SecurityException("缺少调用者身份");
+        }
+        if (!path.startsWith("/") || path.startsWith("//") || path.contains("://")) {
+            throw new IllegalArgumentException("非法业务路径");
+        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(HttpHeaders.AUTHORIZATION, authorization);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        try {
+            return restTemplate.exchange(baseUrl + path, method,
+                    new HttpEntity<>(body, headers), String.class).getBody();
+        } catch (HttpStatusCodeException e) {
+            return e.getResponseBodyAsString();
+        }
+    }
 }

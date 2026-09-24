@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import java.util.Set;
 import java.util.Map;
 import com.msb.hjy.ai.client.CallerContext;
+import com.msb.hjy.ai.config.PendingRepairConfirmationStore;
 
 /**
  * 聊天服务实现类
@@ -28,6 +29,7 @@ public class ChatServiceImpl implements ChatService {
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
     private final PromptTemplate promptTemplate;
+    private final PendingRepairConfirmationStore pendingRepairs;
 
     /** 问候语关键词集合，用于快速匹配打招呼场景 */
     private static final Set<String> GREETING_KEYWORDS = Set.of("你好", "hi", "hello", "在吗", "您好", "嗨", "hey");
@@ -35,10 +37,12 @@ public class ChatServiceImpl implements ChatService {
     /** SSE 流结束标记：所有正常完成的流都以该标记收尾，前端收到后结束加载状态 */
     private static final String SSE_DONE = "[DONE]";
 
-    public ChatServiceImpl(ChatClient chatClient, ChatMemory chatMemory, PromptTemplate promptTemplate) {
+    public ChatServiceImpl(ChatClient chatClient, ChatMemory chatMemory, PromptTemplate promptTemplate,
+                           PendingRepairConfirmationStore pendingRepairs) {
         this.chatClient = chatClient;
         this.chatMemory = chatMemory;
         this.promptTemplate = promptTemplate;
+        this.pendingRepairs = pendingRepairs;
     }
 
     @Override
@@ -120,6 +124,7 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public void clearSession(String sessionId) {
         chatMemory.clear(sessionId);
+        pendingRepairs.delete(sessionId);
         log.info("清除会话历史 - sessionId: {}", sessionId);
     }
 
@@ -147,6 +152,11 @@ public class ChatServiceImpl implements ChatService {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             throw new IllegalStateException("缺少可信调用者身份");
         }
-        return Map.of(CallerContext.AUTHORIZATION, authorization);
+        Map<String, Object> context = new java.util.HashMap<>();
+        context.put(CallerContext.AUTHORIZATION, authorization);
+        context.put(CallerContext.USER_NAME, request.getUserName());
+        context.put(CallerContext.USER_MESSAGE, request.getMessage());
+        context.put(CallerContext.CONVERSATION_ID, conversationId(request));
+        return context;
     }
 }

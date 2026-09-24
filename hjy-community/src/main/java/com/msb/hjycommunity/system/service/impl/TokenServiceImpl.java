@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Cookie;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -207,6 +208,19 @@ public LoginUser getLoginUser(HttpServletRequest request) {
      */
     private String getToken(HttpServletRequest request){
         String token = request.getHeader(this.header);
+        // iframe 无法附加 Authorization 头。仅 Druid 路径允许读取管理端同源 Cookie，
+        // 后续仍会校验 Redis 登录态、账号状态以及平台管理员身份。
+        if (StringUtils.isEmpty(token) && request.getRequestURI().startsWith("/druid/")) {
+            Cookie[] cookies = request.getCookies();
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if ("Admin-Token".equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
         //JWT 标准写法 Authorization: Bearer aaa.bb.cc
         if(!StringUtils.isEmpty(token) && token.startsWith(Constants.TOKEN_PREFIX)){
             token = token.replace(Constants.TOKEN_PREFIX,"");

@@ -92,6 +92,12 @@ WHERE r.role_key = 'common'
   AND m.menu_type = 'F'
   AND m.perms NOT REGEXP ':(query|list|export)$';
 
+-- 9) 数据监控仅由平台超级管理员使用；普通角色/社区服务角色不展示入口。
+-- 超级管理员 user_id=1 在菜单服务中默认拥有全部菜单，无需角色菜单关联。
+DELETE rm FROM sys_role_menu rm
+JOIN sys_role r ON rm.role_id = r.role_id
+WHERE rm.menu_id = 111 AND r.role_key <> 'admin';
+
 -- 2026-09-15 code-review修复配套：通知导出按钮权限（配合后端@PreAuthorize system:notice:export）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
 SELECT 1040, '通知导出', parent_id, 5, '', '', 1, 0, 'F', '0', '0', 'system:notice:export', '#', 'admin', NOW(), '通知公告导出按钮权限' FROM sys_menu WHERE menu_id = 1037;

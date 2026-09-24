@@ -93,7 +93,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/webjars/**").anonymous()
                 .antMatchers("/swagger-ui/index.html").anonymous()
                 .antMatchers("/doc.html").anonymous()
-                .antMatchers("/druid/**").denyAll()
+                // Druid iframe 使用同源 Admin-Token Cookie 校验平台管理员，再由 Druid 独立账号二次认证。
+                .antMatchers("/druid/**").access("@pe.isAdmin()")
                 // 除上面外的所有请求全部需要鉴权认证
                 .anyRequest().authenticated();
         http

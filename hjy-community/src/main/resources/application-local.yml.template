@@ -5,3 +5,5 @@
 MYSQL_USERNAME: root
 MYSQL_PASSWORD: 你的数据库密码
 TOKEN_SECRET: 你的JWT签名密钥
+DRUID_USERNAME: 你的Druid监控账号
+DRUID_PASSWORD: 你的Druid监控密码

@@ -77,6 +77,7 @@ public class ChatClientConfig {
      */
     @Bean
     public ChatClient chatClient(ChatModel chatModel, ChatMemory chatMemory,
+                                 PendingRepairConfirmationStore pendingRepairs,
                                  ObjectProvider<ToolCallbackProvider> mcpToolCallbackProvider) {
         ChatClient.Builder builder = ChatClient.builder(chatModel)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
@@ -84,13 +85,13 @@ public class ChatClientConfig {
         List<ToolCallback> callbacks = new ArrayList<>();
         for (ToolCallback tool : ToolCallbacks.from(repairTool, complaintTool, propertyFeeTool,
                 ownerInfoTool, announcementTool, communityTool)) {
-            callbacks.add(new AuthorizedToolCallback(tool));
+            callbacks.add(new AuthorizedToolCallback(tool, pendingRepairs));
         }
 
         // 注册 MCP 远程工具（query_login_location / query_weather 等），与本地六大工具同时生效
         ToolCallbackProvider mcpTools = mcpToolCallbackProvider.getIfAvailable();
         if (mcpTools != null) {
-            for (ToolCallback tool : mcpTools.getToolCallbacks()) callbacks.add(new AuthorizedToolCallback(tool));
+            for (ToolCallback tool : mcpTools.getToolCallbacks()) callbacks.add(new AuthorizedToolCallback(tool, pendingRepairs));
         }
         builder.defaultToolCallbacks(callbacks.toArray(new ToolCallback[0]));
         return builder.build();

@@ -113,7 +113,7 @@ public class RepairTool {
      * @param category  报修类别
      * @return 创建结果文本
      */
-    @Tool(description = "创建新的报修工单。用于回答'我要报修'、'提交报修'、'报修水管'等问题，需要业主姓名、联系电话、报修位置和问题描述")
+    @Tool(description = "整理并创建新的报修工单。首次调用只展示核对信息；只有用户随后明确回复‘确认提交’时才能真正创建。需要业主姓名、联系电话、报修位置和问题描述")
     public String createRepairOrder(
             @ToolParam(description = "业主姓名，必填") String ownerName,
             @ToolParam(description = "联系电话") String phone,
