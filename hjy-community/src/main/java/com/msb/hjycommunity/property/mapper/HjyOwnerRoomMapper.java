@@ -12,6 +12,12 @@ import java.util.List;
  */
 public interface HjyOwnerRoomMapper extends BaseMapper<HjyOwnerRoom> {
 
+    @org.apache.ibatis.annotations.Select("SELECT owner_room_id FROM hjy_owner_room WHERE room_id = #{roomId} AND owner_id = #{ownerId} AND (room_status IS NULL OR room_status != 'Rejected') FOR UPDATE")
+    List<Long> selectActiveBindingIdsForUpdate(@Param("roomId") Long roomId, @Param("ownerId") Long ownerId);
+
+    @org.apache.ibatis.annotations.Delete("DELETE FROM hjy_owner_room WHERE owner_room_id = #{id} AND room_status = #{state}")
+    int deleteOwnerRoomIfState(@Param("id") Long id, @Param("state") String state);
+
     /**
      * 查询房屋绑定列表
      */

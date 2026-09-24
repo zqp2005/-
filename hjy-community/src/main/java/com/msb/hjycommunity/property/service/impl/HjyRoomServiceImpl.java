@@ -20,6 +20,9 @@ import java.util.List;
 public class HjyRoomServiceImpl implements HjyRoomService {
 
     @Resource
+    private com.msb.hjycommunity.property.service.PropertyHierarchyValidator hierarchyValidator;
+
+    @Resource
     private HjyRoomMapper roomMapper;
 
     @Override
@@ -35,6 +38,7 @@ public class HjyRoomServiceImpl implements HjyRoomService {
     @Override
     @Transactional
     public int insertRoom(HjyRoom room) {
+        hierarchyValidator.room(room, null);
         // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
         room.setRoomId(IdWorker.getId());
         room.setCreateBy(SecurityUtils.getUserName());
@@ -44,6 +48,9 @@ public class HjyRoomServiceImpl implements HjyRoomService {
     @Override
     @Transactional
     public int updateRoom(HjyRoom room) {
+        HjyRoom existing = room.getRoomId() == null ? null : roomMapper.selectRoomById(room.getRoomId());
+        com.msb.hjycommunity.property.service.PropertyHierarchyValidator.require(existing, "记录不存在");
+        hierarchyValidator.room(room, existing);
         room.setUpdateBy(SecurityUtils.getUserName());
         return roomMapper.updateRoom(room);
     }

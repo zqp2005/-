@@ -12,6 +12,9 @@ import java.util.List;
  */
 public interface HjyRoomMapper extends BaseMapper<HjyRoom> {
 
+    @org.apache.ibatis.annotations.Select("SELECT room_id FROM hjy_room WHERE room_id = #{roomId} FOR UPDATE")
+    Long lockRoom(@Param("roomId") Long roomId);
+
     /**
      * 查询房间列表
      */

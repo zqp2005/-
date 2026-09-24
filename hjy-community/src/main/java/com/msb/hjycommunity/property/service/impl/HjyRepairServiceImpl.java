@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.text.SimpleDateFormat;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -26,6 +26,9 @@ public class HjyRepairServiceImpl implements HjyRepairService {
 
     @Resource
     private HjyRepairMapper repairMapper;
+
+    @Resource private com.msb.hjycommunity.system.mapper.SysUserMapper userMapper;
+    @Resource private com.msb.hjycommunity.framework.service.SysPermissionService permissionService;
 
     @Override
     public List<HjyRepair> selectRepairList(HjyRepair repair) {
@@ -46,17 +49,25 @@ public class HjyRepairServiceImpl implements HjyRepairService {
             throw new CustomException(500, "手机号格式不正确");
         }
         repair.setCreateBy(SecurityUtils.getUserName());
-        // 状态一律由后端控制为待处理，工单号为空时自动生成（RX+时间戳，避免并发重号）
+        // 新建只接受业务资料，流程字段与编号由后端生成。
         repair.setRepairState(RepairState.PENDING);
-        if (repair.getRepairNum() == null || repair.getRepairNum().trim().isEmpty()) {
-            repair.setRepairNum("RX" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date()));
-        }
+        repair.setRepairNum("RX" + IdWorker.getId());
+        repair.setAssignmentId(null);
+        repair.setAssignmentTime(null);
+        repair.setReceivingOrdersTime(null);
+        repair.setCompleteId(null);
+        repair.setCompleteName(null);
+        repair.setCompletePhone(null);
+        repair.setCompleteTime(null);
+        repair.setCancelTime(null);
         return repairMapper.insertRepair(repair);
     }
 
     @Override
     @Transactional
     public int updateRepair(HjyRepair repair) {
+        repair.setExpectedState(null);
+        repair.setRepairNum(null);
         // 流转字段只允许动作接口修改，普通编辑一律忽略（mapper 动态 SQL 判空自动跳过）
         repair.setRepairState(null);
         repair.setAssignmentTime(null);
@@ -86,6 +97,15 @@ public class HjyRepairServiceImpl implements HjyRepairService {
     @Override
     @Transactional
     public int assignRepair(Long repairId, Long assignmentId) {
+        com.msb.hjycommunity.system.domain.SysUser worker = assignmentId == null ? null : userMapper.selectUserById(assignmentId);
+        if (worker == null || !"0".equals(worker.getStatus()) || !"0".equals(worker.getDelFlag())) {
+            throw new CustomException(400, "请选择有效且启用的维修人员");
+        }
+        java.util.Set<String> permissions = permissionService.getMenuPermission(worker);
+        if (permissions == null || !(permissions.contains("*:*:*")
+                || (permissions.contains("system:repair:receive") && permissions.contains("system:repair:complete")))) {
+            throw new CustomException(400, "所选人员没有接单及完成权限");
+        }
         HjyRepair repair = getRepairOrThrow(repairId);
         assertCanTransit(repair, RepairState.ALLOCATED, "派单");
 
@@ -95,13 +115,17 @@ public class HjyRepairServiceImpl implements HjyRepairService {
         update.setAssignmentId(assignmentId);
         update.setAssignmentTime(new Date());
         update.setUpdateBy(SecurityUtils.getUserName());
-        return repairMapper.updateRepair(update);
+        update.setExpectedState(repair.getRepairState());
+        int changed = repairMapper.updateRepair(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
     }
 
     @Override
     @Transactional
     public int receiveRepair(Long repairId) {
         HjyRepair repair = getRepairOrThrow(repairId);
+        assertAssignedWorker(repair);
         assertCanTransit(repair, RepairState.PROCESSING, "接单");
 
         HjyRepair update = new HjyRepair();
@@ -109,13 +133,17 @@ public class HjyRepairServiceImpl implements HjyRepairService {
         update.setRepairState(RepairState.PROCESSING);
         update.setReceivingOrdersTime(new Date());
         update.setUpdateBy(SecurityUtils.getUserName());
-        return repairMapper.updateRepair(update);
+        update.setExpectedState(repair.getRepairState());
+        int changed = repairMapper.updateRepair(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
     }
 
     @Override
     @Transactional
     public int completeRepair(Long repairId) {
         HjyRepair repair = getRepairOrThrow(repairId);
+        assertAssignedWorker(repair);
         assertCanTransit(repair, RepairState.PROCESSED, "完成");
 
         HjyRepair update = new HjyRepair();
@@ -126,12 +154,16 @@ public class HjyRepairServiceImpl implements HjyRepairService {
         update.setCompleteName(SecurityUtils.getUserName());
         update.setCompletePhone(SecurityUtils.getLoginUser().getUser().getPhonenumber());
         update.setUpdateBy(SecurityUtils.getUserName());
-        return repairMapper.updateRepair(update);
+        update.setExpectedState(repair.getRepairState());
+        int changed = repairMapper.updateRepair(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
     }
 
     @Override
     @Transactional
     public int cancelRepair(Long repairId, String reason) {
+        if (reason == null || reason.trim().isEmpty()) throw new CustomException(400, "必须填写原因");
         HjyRepair repair = getRepairOrThrow(repairId);
         assertCanTransit(repair, RepairState.CANCELLED, "取消");
 
@@ -141,12 +173,16 @@ public class HjyRepairServiceImpl implements HjyRepairService {
         update.setCancelTime(new Date());
         update.setRemark(reason);
         update.setUpdateBy(SecurityUtils.getUserName());
-        return repairMapper.updateRepair(update);
+        update.setExpectedState(repair.getRepairState());
+        int changed = repairMapper.updateRepair(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
     }
 
     @Override
     @Transactional
     public int rejectRepair(Long repairId, String reason) {
+        if (reason == null || reason.trim().isEmpty()) throw new CustomException(400, "必须填写原因");
         HjyRepair repair = getRepairOrThrow(repairId);
         assertCanTransit(repair, RepairState.NO_PROCESSED, "不处理");
 
@@ -155,7 +191,17 @@ public class HjyRepairServiceImpl implements HjyRepairService {
         update.setRepairState(RepairState.NO_PROCESSED);
         update.setRemark(reason);
         update.setUpdateBy(SecurityUtils.getUserName());
-        return repairMapper.updateRepair(update);
+        update.setExpectedState(repair.getRepairState());
+        int changed = repairMapper.updateRepair(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
+    }
+
+    private void assertAssignedWorker(HjyRepair repair) {
+        Long current = SecurityUtils.getLoginUser().getUser().getUserId();
+        if (current == null || !current.equals(repair.getAssignmentId())) {
+            throw new CustomException(403, "仅被分派的维修人员可以接单或完成工单");
+        }
     }
 
     /** 查询工单，不存在则抛业务异常 */

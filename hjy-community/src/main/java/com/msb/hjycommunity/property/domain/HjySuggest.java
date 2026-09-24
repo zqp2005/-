@@ -13,6 +13,15 @@ public class HjySuggest extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
+    /** 服务端比较并更新条件，不接受客户端提供；不映射到数据表。 */
+    @com.baomidou.mybatisplus.annotation.TableField(exist = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    private String expectedState;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public String getExpectedState() { return expectedState; }
+    public void setExpectedState(String expectedState) { this.expectedState = expectedState; }
+
     /** 投诉建议ID */
     @TableId
     @JsonFormat(shape = JsonFormat.Shape.STRING)

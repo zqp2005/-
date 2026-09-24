@@ -125,7 +125,9 @@
             update_time = NOW()
         </set>
         WHERE owner_room_id = #{ownerRoomId}
+        <if test="expectedState != null">AND room_status = #{expectedState}</if>
     </update>
+
 
     <delete id="deleteOwnerRoomById" parameterType="Long">
         DELETE FROM hjy_owner_room WHERE owner_room_id = #{ownerRoomId}

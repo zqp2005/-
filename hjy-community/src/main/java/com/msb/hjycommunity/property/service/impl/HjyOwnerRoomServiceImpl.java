@@ -5,7 +5,7 @@ import com.msb.hjycommunity.common.core.exception.CustomException;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyOwnerRoom;
 import com.msb.hjycommunity.property.domain.HjyOwnerRoomRecord;
-import com.msb.hjycommunity.property.domain.HjyRoom;
+import com.msb.hjycommunity.property.service.PropertyHierarchyValidator;
 import com.msb.hjycommunity.property.mapper.HjyOwnerRoomMapper;
 import com.msb.hjycommunity.property.mapper.HjyRoomMapper;
 import com.msb.hjycommunity.property.service.HjyOwnerRoomService;
@@ -25,9 +25,7 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
     private static final String BINDING_AUDITING = "Auditing";
     private static final String BINDING_BOUND = "Binding";
     private static final String BINDING_REJECTED = "Rejected";
-    /** 房间状态（hjy_room_state 字典） */
-    private static final String ROOM_HAS_STAY = "has_stay";
-    private static final String ROOM_NONE_STAY = "none_stay";
+    @Resource private PropertyHierarchyValidator hierarchyValidator;
 
     @Resource
     private HjyOwnerRoomMapper ownerRoomMapper;
@@ -48,8 +46,11 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
     @Override
     @Transactional
     public int insertOwnerRoom(HjyOwnerRoom ownerRoom) {
+        // 先锁定房间，串行化同一房间的关系申请；当前读防止事务快照漏掉刚提交的申请。
+        PropertyHierarchyValidator.require(roomMapper.lockRoom(ownerRoom.getRoomId()), "房间不存在");
+        hierarchyValidator.binding(ownerRoom);
         // 同房间同人不可重复绑定（已驳回的除外，可重新提交）
-        if (ownerRoomMapper.countActiveBinding(ownerRoom.getRoomId(), ownerRoom.getOwnerId()) > 0) {
+        if (!ownerRoomMapper.selectActiveBindingIdsForUpdate(ownerRoom.getRoomId(), ownerRoom.getOwnerId()).isEmpty()) {
             throw new CustomException(500, "该业主与此房屋已存在绑定关系，不可重复绑定");
         }
         // 状态一律由审核流程控制
@@ -64,6 +65,11 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
     @Transactional
     public int updateOwnerRoom(HjyOwnerRoom ownerRoom) {
         // 流转字段只允许动作接口修改，普通编辑一律忽略（与报修/投诉编辑降级同模式）
+        ownerRoom.setExpectedState(null);
+        ownerRoom.setCommunityId(null);
+        ownerRoom.setBuildingId(null);
+        ownerRoom.setUnitId(null);
+        ownerRoom.setOwnerType(null); // 已核验身份不能借普通编辑替换
         ownerRoom.setRoomStatus(null);
         ownerRoom.setRoomId(null);
         ownerRoom.setOwnerId(null);
@@ -81,34 +87,24 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
     @Override
     @Transactional
     public int deleteOwnerRoomByIds(Long[] ownerRoomIds) {
-        // 解绑语义：已绑定的删除前留痕；删除后房间无人则置回未入住
-        for (Long ownerRoomId : ownerRoomIds) {
+        if (ownerRoomIds == null || ownerRoomIds.length == 0) throw new CustomException(400, "请选择绑定记录");
+        int changed = 0;
+        for (Long ownerRoomId : new java.util.TreeSet<>(java.util.Arrays.asList(ownerRoomIds))) {
             HjyOwnerRoom ownerRoom = ownerRoomMapper.selectOwnerRoomById(ownerRoomId);
-            if (ownerRoom == null) {
-                continue;
+            if (ownerRoom == null) continue;
+            if (!BINDING_BOUND.equals(ownerRoom.getRoomStatus()) && !BINDING_AUDITING.equals(ownerRoom.getRoomStatus())) {
+                throw new CustomException(400, "仅允许解绑已绑定记录或撤回审核中申请");
             }
-            if (BINDING_REJECTED.equals(ownerRoom.getRoomStatus())) {
-                throw new CustomException(500, "已驳回的绑定记录仅作留痕保留，不支持删除");
+            if (ownerRoomMapper.deleteOwnerRoomIfState(ownerRoomId, ownerRoom.getRoomStatus()) != 1) {
+                throw new CustomException(409, "绑定状态已变化，请刷新后重试");
             }
-            if (BINDING_BOUND.equals(ownerRoom.getRoomStatus())) {
-                HjyOwnerRoomRecord record = new HjyOwnerRoomRecord();
-                record.setRecordId(IdWorker.getId());
-                record.setOwnerRoomId(String.valueOf(ownerRoomId));
-                record.setRoomId(ownerRoom.getRoomId());
-                record.setCommunityId(ownerRoom.getCommunityId());
-                record.setBuildingId(ownerRoom.getBuildingId());
-                record.setUnitId(ownerRoom.getUnitId());
-                record.setOwnerId(ownerRoom.getOwnerId());
-                record.setOwnerType(ownerRoom.getOwnerType());
-                record.setRecordAuditType("unbind");
-                record.setRecordAuditOpinion("解除绑定");
-                record.setCreateBy(SecurityUtils.getUserName());
-                ownerRoomMapper.insertRecord(record);
-            }
-            ownerRoomMapper.deleteOwnerRoomById(ownerRoomId);
-            syncRoomStatus(ownerRoom.getRoomId());
+            HjyOwnerRoomRecord record = record(ownerRoom);
+            record.setRecordAuditType(BINDING_BOUND.equals(ownerRoom.getRoomStatus()) ? "unbind" : "withdraw");
+            record.setRecordAuditOpinion(BINDING_BOUND.equals(ownerRoom.getRoomStatus()) ? "解除绑定" : "撤回申请");
+            if (ownerRoomMapper.insertRecord(record) != 1) throw new CustomException(500, "留痕失败");
+            changed++;
         }
-        return ownerRoomIds.length;
+        return changed;
     }
 
     @Override
@@ -134,7 +130,9 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
         update.setOwnerRoomId(ownerRoomId);
         update.setRoomStatus(pass ? BINDING_BOUND : BINDING_REJECTED);
         update.setUpdateBy(SecurityUtils.getUserName());
+        update.setExpectedState(BINDING_AUDITING);
         int result = ownerRoomMapper.updateOwnerRoom(update);
+        if (result != 1) throw new CustomException(409, "绑定状态已变化，请刷新后重试");
 
         // 审核留痕
         HjyOwnerRoomRecord record = new HjyOwnerRoomRecord();
@@ -149,21 +147,23 @@ public class HjyOwnerRoomServiceImpl implements HjyOwnerRoomService {
         record.setRecordAuditType(pass ? "pass" : "reject");
         record.setRecordAuditOpinion(auditOpinion);
         record.setCreateBy(SecurityUtils.getUserName());
-        ownerRoomMapper.insertRecord(record);
-
-        // 审核通过：房间状态联动为已入住
-        if (pass) {
-            syncRoomStatus(ownerRoom.getRoomId());
-        }
+        if (ownerRoomMapper.insertRecord(record) != 1) throw new CustomException(500, "留痕失败");
+        // 人房关联不代表实际入住，不修改房间入住或销售状态。
         return result;
     }
 
-    /** 房间入住状态联动：还有已绑定的人则已入住，否则未入住 */
-    private void syncRoomStatus(Long roomId) {
-        HjyRoom roomUpdate = new HjyRoom();
-        roomUpdate.setRoomId(roomId);
-        roomUpdate.setRoomStatus(
-                ownerRoomMapper.countRoomBindings(roomId) > 0 ? ROOM_HAS_STAY : ROOM_NONE_STAY);
-        roomMapper.updateRoom(roomUpdate);
+    private HjyOwnerRoomRecord record(HjyOwnerRoom relation) {
+        HjyOwnerRoomRecord record = new HjyOwnerRoomRecord();
+        record.setRecordId(IdWorker.getId());
+        record.setOwnerRoomId(String.valueOf(relation.getOwnerRoomId()));
+        record.setRoomId(relation.getRoomId());
+        record.setCommunityId(relation.getCommunityId());
+        record.setBuildingId(relation.getBuildingId());
+        record.setUnitId(relation.getUnitId());
+        record.setOwnerId(relation.getOwnerId());
+        record.setOwnerType(relation.getOwnerType());
+        record.setRoomStatus(relation.getRoomStatus());
+        record.setCreateBy(SecurityUtils.getUserName());
+        return record;
     }
 }

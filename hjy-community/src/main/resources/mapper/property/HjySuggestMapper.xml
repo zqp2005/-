@@ -102,7 +102,9 @@
             update_time = NOW()
         </set>
         WHERE complaint_suggest_id = #{complaintSuggestId}
+        <if test="expectedState != null">AND complaint_state = #{expectedState}</if>
     </update>
+
 
     <delete id="deleteSuggestById" parameterType="Long">
         DELETE FROM hjy_suggest WHERE complaint_suggest_id = #{complaintSuggestId}

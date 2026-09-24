@@ -47,12 +47,16 @@ public class HjySuggestServiceImpl implements HjySuggestService {
         suggest.setCreateBy(SecurityUtils.getUserName());
         // 状态一律由后端控制为待受理
         suggest.setComplaintState(SuggestState.PENDING);
+        suggest.setHandleBy(null);
+        suggest.setHandleTime(null);
+        suggest.setReplyContent(null);
         return suggestMapper.insertSuggest(suggest);
     }
 
     @Override
     @Transactional
     public int updateSuggest(HjySuggest suggest) {
+        suggest.setExpectedState(null);
         // 流转字段只允许动作接口修改，普通编辑一律忽略（mapper 动态 SQL 判空自动跳过）
         suggest.setComplaintState(null);
         suggest.setHandleBy(null);
@@ -86,7 +90,10 @@ public class HjySuggestServiceImpl implements HjySuggestService {
         update.setHandleBy(SecurityUtils.getUserName());
         update.setHandleTime(new Date());
         update.setUpdateBy(SecurityUtils.getUserName());
-        return suggestMapper.updateSuggest(update);
+        update.setExpectedState(suggest.getComplaintState());
+        int changed = suggestMapper.updateSuggest(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
     }
 
     @Override
@@ -103,7 +110,10 @@ public class HjySuggestServiceImpl implements HjySuggestService {
         update.setComplaintState(SuggestState.REPLIED);
         update.setReplyContent(replyContent);
         update.setUpdateBy(SecurityUtils.getUserName());
-        return suggestMapper.updateSuggest(update);
+        update.setExpectedState(suggest.getComplaintState());
+        int changed = suggestMapper.updateSuggest(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
     }
 
     @Override
@@ -122,7 +132,10 @@ public class HjySuggestServiceImpl implements HjySuggestService {
         update.setComplaintState(SuggestState.CLOSED);
         update.setRemark(reason);
         update.setUpdateBy(SecurityUtils.getUserName());
-        return suggestMapper.updateSuggest(update);
+        update.setExpectedState(suggest.getComplaintState());
+        int changed = suggestMapper.updateSuggest(update);
+        if (changed != 1) throw new CustomException(409, "状态已变化，请刷新后重试");
+        return changed;
     }
 
     /** 查询投诉建议，不存在则抛业务异常 */

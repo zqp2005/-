@@ -21,6 +21,9 @@ import java.util.List;
 public class HjyBuildingServiceImpl implements HjyBuildingService {
 
     @Resource
+    private com.msb.hjycommunity.property.service.PropertyHierarchyValidator hierarchyValidator;
+
+    @Resource
     private HjyBuildingMapper buildingMapper;
 
     @Override
@@ -36,6 +39,7 @@ public class HjyBuildingServiceImpl implements HjyBuildingService {
     @Override
     @Transactional
     public int insertBuilding(HjyBuilding building) {
+        hierarchyValidator.building(building, null);
         // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
         building.setBuildingId(IdWorker.getId());
         building.setCreateBy(SecurityUtils.getUserName());
@@ -45,6 +49,9 @@ public class HjyBuildingServiceImpl implements HjyBuildingService {
     @Override
     @Transactional
     public int updateBuilding(HjyBuilding building) {
+        HjyBuilding existing = building.getBuildingId() == null ? null : buildingMapper.selectBuildingById(building.getBuildingId());
+        com.msb.hjycommunity.property.service.PropertyHierarchyValidator.require(existing, "记录不存在");
+        hierarchyValidator.building(building, existing);
         building.setUpdateBy(SecurityUtils.getUserName());
         return buildingMapper.updateBuilding(building);
     }

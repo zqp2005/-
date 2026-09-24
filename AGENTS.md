@@ -52,13 +52,8 @@ cd /d/Uilted/hjy_ui/hejiayun_ui
 npm run dev                            # 开发服务器（端口 80）
 npm run build:prod                     # 生产构建
 npm run lint                           # 代码检查
-npm run test:unit                      # 单元测试（Jest）
 ```
-⚠️ npm scripts 内嵌的是 **Windows cmd 的 `set` 语法**（`set NODE_OPTIONS=--openssl-legacy-provider && ...`）。在 bash（Git Bash）下 `set` 是 shell 内置命令，**不会设置环境变量**，导致老版 webpack 的 OpenSSL 报错。bash 下请手动执行：
-```bash
-export NODE_OPTIONS=--openssl-legacy-provider
-npx vue-cli-service serve
-```
+当前前端已迁移 Vue 2.7 + Vite，`npm run dev` 直接运行 Vite，Node.js 18+；无需旧版 webpack 的 OpenSSL 参数。当前 package.json 未配置 test:unit，不应假称已有 Jest 回归。
 
 ## 数据库
 
@@ -97,7 +92,7 @@ MySQL 8，本地 `127.0.0.1:3306`，账号 root/123456（真实值在 `hjy-commu
 - **业主端接口（小程序）**：`web.controller.app` 包提供 `/app/**` 独立接口层（注册/登录、提交报修投诉、查自己的单）。Spring Security 对 `/app/**` `permitAll`，认证由 `AppAuthFilter` 自管：签发/校验**独立于管理端的业主 JWT**（Redis key `owner_tokens:{uuid}`，与管理端 `login_tokens` 完全隔离），注册白名单（register/login）、手机号/身份证正则校验，禁止凭自填资料激活存量空密码业主，暂需联系物业核验；每次请求复核账号状态、凭据指纹和有效期。
 - **MyBatis-Plus + PageHelper**：增删改查通过 MyBatis-Plus（`BaseMapper`），分页通过 PageHelper（`PageHelper.startPage()`），复杂查询在 `resources/mapper/**/*Mapper.xml` 中（按 monitor/property/system 模块组织）。
 - **DTO/VO 模式**：`domain/dto` 存放请求体，`domain/vo` 存放响应体。使用 Orika（`MapperFacade`）进行对象属性拷贝。
-- **业务状态机与动作接口**：报修（`RepairState`）与投诉（`SuggestState`）的状态流转只能通过动作端点驱动（报修 `assign/receive/complete/cancel/reject`，投诉 `accept/reply/close`，均为 `PUT .../动作/{id}`），非法转移抛 `CustomException` 并自动记录时间戳/操作人；普通 update 在 Service 层置空流转字段实现编辑降级。房屋绑定走审核流（Auditing→Binding/Rejected，审核/解绑在 `hjy_owner_room_record` 留痕并联动房间入住状态）。社区/楼栋/单元/房间/业主五级删除有级联校验，有下级数据整批拒绝。
+- **业务状态机与动作接口**：报修（`RepairState`）与投诉（`SuggestState`）的状态流转只能通过动作端点驱动（报修 `assign/receive/complete/cancel/reject`，投诉 `accept/reply/close`，均为 `PUT .../动作/{id}`），非法转移抛 `CustomException` 并自动记录时间戳/操作人；普通 update 在 Service 层置空流转字段实现编辑降级。房屋绑定走审核流（Auditing→Binding/Rejected，审核/解绑/撤回在 `hjy_owner_room_record` 留痕，不再联动房间入住状态）。社区/楼栋/单元/房间/业主五级删除有级联校验，有下级数据整批拒绝。
 
 ### 配置文件
 - `application.yml` —— 主配置（服务器、Redis、MyBatis-Plus、JWT token）
@@ -173,5 +168,5 @@ hjy-ai-service ← SSE ← hjy-mcp-server（8091，提供登录地址定位/天�
 ## 分批交付约定
 
 - 每批完成后同步更新对应仓库 README.md，说明已实现行为、验证结果、部署变化和仍未完成事项。
-- 业务目标与分批状态见 `doc/业务规则与分批实施基线.md`；房屋关联不等于实际入住，未完成迁移前不得宣称已解耦。
+- 业务目标与分批状态见 `doc/业务规则与分批实施基线.md`；房屋关联不等于实际入住，已停止状态联动；独立入住登记及历史核验仍待实施。
 - 后端、前端每批验证后仅提交本批文件并推送；小程序不提交推送；未经用户要求不动 dev 分支，保留原有未提交修改。

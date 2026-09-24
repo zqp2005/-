@@ -20,6 +20,9 @@ import java.util.List;
 public class HjyUnitServiceImpl implements HjyUnitService {
 
     @Resource
+    private com.msb.hjycommunity.property.service.PropertyHierarchyValidator hierarchyValidator;
+
+    @Resource
     private HjyUnitMapper unitMapper;
 
     @Override
@@ -35,6 +38,7 @@ public class HjyUnitServiceImpl implements HjyUnitService {
     @Override
     @Transactional
     public int insertUnit(HjyUnit unit) {
+        hierarchyValidator.unit(unit, null);
         // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
         unit.setUnitId(IdWorker.getId());
         unit.setCreateBy(SecurityUtils.getUserName());
@@ -44,6 +48,9 @@ public class HjyUnitServiceImpl implements HjyUnitService {
     @Override
     @Transactional
     public int updateUnit(HjyUnit unit) {
+        HjyUnit existing = unit.getUnitId() == null ? null : unitMapper.selectUnitById(unit.getUnitId());
+        com.msb.hjycommunity.property.service.PropertyHierarchyValidator.require(existing, "记录不存在");
+        hierarchyValidator.unit(unit, existing);
         unit.setUpdateBy(SecurityUtils.getUserName());
         return unitMapper.updateUnit(unit);
     }
