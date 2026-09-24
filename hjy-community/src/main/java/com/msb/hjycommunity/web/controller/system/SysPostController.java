@@ -1,5 +1,7 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import com.msb.hjycommunity.system.domain.dto.SysPostExcelDto;
@@ -34,6 +36,7 @@ public class SysPostController extends BaseController {
      * 导出岗位信息数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:post:export')")
     public void export(SysPost post, HttpServletResponse response) {
         List<SysPost> list = postService.selectPostList(post);
         List<SysPostExcelDto> dtoList = list.stream().map(item -> {
@@ -49,6 +52,7 @@ public class SysPostController extends BaseController {
      * 获取岗位列表
      */
     @GetMapping("/list")
+    @PreAuthorize("@pe.hasPerms('system:post:list')")
     public PageResult list(SysPost post)
     {
         startPage();
@@ -60,6 +64,7 @@ public class SysPostController extends BaseController {
      * 根据岗位编号获取详细信息
      */
     @GetMapping(value = "/{postId}")
+    @PreAuthorize("@pe.hasPerms('system:post:query')")
     public BaseResponse getInfo(@PathVariable Long postId)
     {
         return BaseResponse.success(postService.selectPostById(postId));
@@ -69,6 +74,7 @@ public class SysPostController extends BaseController {
      * 新增岗位
      */
     @PostMapping
+    @PreAuthorize("@pe.hasPerms('system:post:add')")
     public BaseResponse add( @RequestBody SysPost post)
     {
         if (UserConstants.NOT_UNIQUE.equals(postService.checkPostNameUnique(post)))
@@ -87,6 +93,7 @@ public class SysPostController extends BaseController {
      * 修改岗位
      */
     @PutMapping
+    @PreAuthorize("@pe.hasPerms('system:post:edit')")
     public BaseResponse edit(@RequestBody SysPost post)
     {
         if (UserConstants.NOT_UNIQUE.equals(postService.checkPostNameUnique(post)))
@@ -105,6 +112,7 @@ public class SysPostController extends BaseController {
      * 删除岗位
      */
     @DeleteMapping("/{postIds}")
+    @PreAuthorize("@pe.hasPerms('system:post:remove')")
     public BaseResponse remove(@PathVariable Long[] postIds)
     {
         return toAjax(postService.deletePostByIds(postIds));
@@ -114,6 +122,7 @@ public class SysPostController extends BaseController {
      * 获取岗位选择框列表
      */
     @GetMapping("/optionselect")
+    @PreAuthorize("@pe.hasAnyPerms('system:post:query,system:user:add,system:user:edit')")
     public BaseResponse optionselect()
     {
         List<SysPost> posts = postService.selectPostAll();

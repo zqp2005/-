@@ -1,5 +1,7 @@
 package com.msb.hjycommunity.web.controller.common;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import cn.afterturn.easypoi.excel.entity.ExportParams;
 import com.msb.hjycommunity.common.core.controller.BaseController;
 import com.msb.hjycommunity.common.utils.ExcelUtils;
@@ -35,6 +37,7 @@ public class ExportExcelController extends BaseController {
      * @return: com.msb.hjycommunity.common.core.domain.BaseResponse
      */
     @GetMapping("/exportCommunityExcel")
+    @PreAuthorize("@pe.hasPerms('system:community:export')")
     public BaseResponse exportExcel(HjyCommunity hjyCommunity, HttpServletResponse response){
 
         startPage();

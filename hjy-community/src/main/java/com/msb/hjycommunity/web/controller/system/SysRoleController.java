@@ -1,5 +1,7 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import com.msb.hjycommunity.system.domain.dto.SysRoleExcelDto;
@@ -39,6 +41,7 @@ public class SysRoleController extends BaseController {
      * 导出角色信息数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:role:export')")
     public void export(SysRole role, HttpServletResponse response) {
         List<SysRole> list = roleService.selectRoleList(role);
         List<SysRoleExcelDto> dtoList = list.stream().map(item -> {
@@ -60,6 +63,7 @@ public class SysRoleController extends BaseController {
     private SysUserService userService;
 
     @RequestMapping("/list")
+    @PreAuthorize("@pe.hasPerms('system:role:list')")
     public PageResult list(SysRole role){
         startPage();
         List<SysRole> sysRoles = roleService.selectRoleList(role);
@@ -67,11 +71,13 @@ public class SysRoleController extends BaseController {
     }
 
     @GetMapping(value = "/{roleId}")
+    @PreAuthorize("@pe.hasPerms('system:role:query')")
     public BaseResponse getInfo(@PathVariable Long roleId){
         return BaseResponse.success(roleService.selectRoleById(roleId));
     }
 
     @PutMapping("/changeStatus")
+    @PreAuthorize("@pe.isAdmin() and @pe.hasPerms('system:role:edit')")
     public BaseResponse changeStatus(@RequestBody SysRole role){
         roleService.checkRoleAllowed(role);
         role.setUpdateBy(SecurityUtils.getUserName());
@@ -79,18 +85,21 @@ public class SysRoleController extends BaseController {
     }
 
     @DeleteMapping("/{roleIds}")
+    @PreAuthorize("@pe.isAdmin() and @pe.hasPerms('system:role:remove')")
     public BaseResponse remove(@PathVariable Long[] roleIds){
         return toAjax(roleService.deleteRoleByIds(roleIds));
     }
 
     //获取角色选择框列表
     @GetMapping("/optionselect")
+    @PreAuthorize("@pe.hasAnyPerms('system:role:query,system:user:add,system:user:edit')")
     public BaseResponse optionSelect(){
         return BaseResponse.success(roleService.selectRoleAll());
     }
 
 
     @PostMapping
+    @PreAuthorize("@pe.isAdmin() and @pe.hasPerms('system:role:add')")
     public BaseResponse add(@RequestBody SysRole role){
         if(UserConstants.NOT_UNIQUE.equals(roleService.checkRoleNameUnique(role))){
             return BaseResponse.fail("新增角色" + role.getRoleName() + "失败,角色名称已存在");
@@ -107,6 +116,7 @@ public class SysRoleController extends BaseController {
      * 修改角色
      */
     @PutMapping
+    @PreAuthorize("@pe.isAdmin() and @pe.hasPerms('system:role:edit')")
     public BaseResponse edit(@RequestBody SysRole role){
 
         roleService.checkRoleAllowed(role);

@@ -35,6 +35,7 @@ public class HjyBuildingController extends BaseController {
      * 导出楼栋信息数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:building:export')")
     public void export(HjyBuilding building, HttpServletResponse response) {
         List<HjyBuilding> list = buildingService.selectBuildingList(building);
         List<HjyBuildingExcelDto> dtoList = list.stream().map(item -> {

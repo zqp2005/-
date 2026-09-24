@@ -41,6 +41,7 @@ public class SysDeptController extends BaseController {
      * @return: com.msb.hjycommunity.common.core.domain.BaseResponse
      */
     @GetMapping(value = "/{deptId}")
+    @PreAuthorize("@pe.hasPerms('system:dept:query')")
     public BaseResponse getInfo(@PathVariable Long deptId){
 
         return BaseResponse.success(deptService.selectDeptById(deptId));
@@ -52,6 +53,7 @@ public class SysDeptController extends BaseController {
      * @return: com.msb.hjycommunity.common.core.domain.BaseResponse
      */
     @PostMapping
+    @PreAuthorize("@pe.hasPerms('system:dept:add')")
     public BaseResponse add(@RequestBody  SysDept sysDept){
         if(UserConstants.NOT_UNIQUE.equals(deptService.checkDeptNameUnique(sysDept))){
             return BaseResponse.fail("新增部门" + sysDept.getDeptName() + "失败,部门名称已经存在");
@@ -64,6 +66,7 @@ public class SysDeptController extends BaseController {
      * 修改部门
      */
     @PutMapping
+    @PreAuthorize("@pe.hasPerms('system:dept:edit')")
     public BaseResponse edit(@RequestBody SysDept sysDept){
         if(UserConstants.NOT_UNIQUE.equals(deptService.checkDeptNameUnique(sysDept))){
             return BaseResponse.fail("修改部门" + sysDept.getDeptName() + "失败,部门名称已经存在");
@@ -80,6 +83,7 @@ public class SysDeptController extends BaseController {
      * 删除部门
      */
     @DeleteMapping("/{deptId}")
+    @PreAuthorize("@pe.hasPerms('system:dept:remove')")
     public BaseResponse remove(@PathVariable Long deptId){
         if(deptService.hasChildByDeptId(deptId)){
             return BaseResponse.fail("存在下级部门,不允许删除");
@@ -95,6 +99,7 @@ public class SysDeptController extends BaseController {
      * 获取部门下拉列表
      */
     @GetMapping("/treeselect")
+    @PreAuthorize("@pe.hasAnyPerms('system:dept:list,system:user:list,system:user:add,system:user:edit')")
     public BaseResponse treeSelect(SysDept sysDept){
         List<SysDept> deptList = deptService.selectDeptList(sysDept);
         List<TreeSelect> treeSelects = deptService.buildDeptTreeSelect(deptList);
@@ -107,6 +112,7 @@ public class SysDeptController extends BaseController {
      * @return: com.msb.hjycommunity.common.core.domain.BaseResponse
      */
     @GetMapping("/list/exclude/{deptId}")
+    @PreAuthorize("@pe.hasPerms('system:dept:edit')")
     public BaseResponse excludeChild(@PathVariable Long deptId){
 
         List<SysDept> deptList = deptService.selectDeptList(new SysDept());

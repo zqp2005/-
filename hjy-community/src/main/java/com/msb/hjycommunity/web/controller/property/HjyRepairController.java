@@ -36,6 +36,7 @@ public class HjyRepairController extends BaseController {
      * 导出报修工单数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:repair:export')")
     public void export(HjyRepair repair, HttpServletResponse response) {
         List<HjyRepair> list = repairService.selectRepairList(repair);
         List<HjyRepairExcelDto> dtoList = list.stream().map(item -> {

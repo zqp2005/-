@@ -32,6 +32,7 @@ public class HjyVisitorController extends BaseController {
      * 导出访客信息数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:visitor:export')")
     public void export(HjyVisitor visitor, HttpServletResponse response) {
         List<HjyVisitor> list = visitorService.selectVisitorList(visitor);
         List<HjyVisitorExcelDto> dtoList = list.stream().map(item -> {

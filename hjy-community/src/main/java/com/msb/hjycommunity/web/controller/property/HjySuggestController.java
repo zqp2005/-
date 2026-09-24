@@ -36,6 +36,7 @@ public class HjySuggestController extends BaseController {
      * 导出投诉建议数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:suggest:export')")
     public void export(HjySuggest suggest, HttpServletResponse response) {
         List<HjySuggest> list = suggestService.selectSuggestList(suggest);
         List<HjySuggestExcelDto> dtoList = list.stream().map(item -> {

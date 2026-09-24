@@ -25,6 +25,12 @@ public class PermsExpressionService {
     @Autowired
     private TokenService tokenService;
 
+    /** 账号及授权管理暂限平台管理员；不能仅凭可编辑的角色名称提权。 */
+    public boolean isAdmin() {
+        LoginUser user = tokenService.getLoginUser(ServletUtils.getRequest());
+        return user != null && user.getUser() != null && user.getUser().isAdmin();
+    }
+
     /**
      * 1) 验证用户是否具备某一个权限
      * @param permission

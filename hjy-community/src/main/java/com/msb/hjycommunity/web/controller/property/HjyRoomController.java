@@ -35,6 +35,7 @@ public class HjyRoomController extends BaseController {
      * 导出房间信息数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:room:export')")
     public void export(HjyRoom room, HttpServletResponse response) {
         List<HjyRoom> list = roomService.selectRoomList(room);
         List<HjyRoomExcelDto> dtoList = list.stream().map(item -> {

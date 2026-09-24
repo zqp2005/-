@@ -35,6 +35,7 @@ public class HjyUnitController extends BaseController {
      * 导出单元信息数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:unit:export')")
     public void export(HjyUnit unit, HttpServletResponse response) {
         List<HjyUnit> list = unitService.selectUnitList(unit);
         List<HjyUnitExcelDto> dtoList = list.stream().map(item -> {

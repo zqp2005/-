@@ -1,5 +1,7 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import com.msb.hjycommunity.system.domain.dto.SysDictDataExcelDto;
@@ -27,6 +29,7 @@ public class SysDictDataController extends BaseController {
      * 导出字典数据数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:dict:export')")
     public void export(SysDictData dictData, HttpServletResponse response) {
         List<SysDictData> list = dictDataService.selectDictDataList(dictData);
         List<SysDictDataExcelDto> dtoList = list.stream().map(item -> {
@@ -38,6 +41,7 @@ public class SysDictDataController extends BaseController {
                 new ExportParams("字典数据列表", "字典数据"));
     }
 @RequestMapping("/list")
+    @PreAuthorize("@pe.hasPerms('system:dict:list')")
     public PageResult list(SysDictData dictData)
 {
     startPage();
@@ -48,6 +52,7 @@ public class SysDictDataController extends BaseController {
  * 根据Id查询字典数据信息
  */
 @GetMapping(value="/{dictCode}")
+@PreAuthorize("@pe.hasPerms('system:dict:query')")
 public BaseResponse getInfo(@PathVariable Long dictCode)
     {
         SysDictData dictData = dictDataService.selectDictDataById(dictCode);
@@ -66,6 +71,7 @@ public BaseResponse getInfo(@PathVariable Long dictCode)
          * 新增字典数据信息
          */
         @PostMapping
+    @PreAuthorize("@pe.hasPerms('system:dict:add')")
     public BaseResponse add(@RequestBody SysDictData sysDictData)
         {
             sysDictData.setCreateBy(SecurityUtils.getUserName ());
@@ -75,6 +81,7 @@ public BaseResponse getInfo(@PathVariable Long dictCode)
          * 修改字典数据信息
          */
         @PutMapping
+        @PreAuthorize("@pe.hasPerms('system:dict:edit')")
         public BaseResponse edit(@RequestBody SysDictData sysDictData)
             {
             sysDictData.setUpdateBy(SecurityUtils.getUserName ());
@@ -84,6 +91,7 @@ public BaseResponse getInfo(@PathVariable Long dictCode)
          * 删除字典数据信息
          */
         @DeleteMapping("/{dictCodes}")
+        @PreAuthorize("@pe.hasPerms('system:dict:remove')")
         public BaseResponse remove(@PathVariable Long[] dictCodes)
             {
                 return toAjax(dictDataService.deleteDictDataByIds(dictCodes));

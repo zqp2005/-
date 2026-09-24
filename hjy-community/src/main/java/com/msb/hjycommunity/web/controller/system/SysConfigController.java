@@ -32,6 +32,7 @@ public class SysConfigController extends BaseController {
      * 导出参数配置数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:config:export')")
     public void export(SysConfig config, HttpServletResponse response) {
         List<SysConfig> list = configService.selectConfigList(config);
         List<SysConfigExcelDto> dtoList = list.stream().map(item -> {

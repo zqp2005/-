@@ -1,5 +1,7 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import com.msb.hjycommunity.common.constant.Constants;
 import com.msb.hjycommunity.common.constant.UserConstants;
 import com.msb.hjycommunity.common.core.controller.BaseController;
@@ -38,6 +40,7 @@ public class SysMenuController extends BaseController {
      * 获取菜单列表
      */
     @GetMapping("/list")
+    @PreAuthorize("@pe.hasPerms('system:menu:list')")
     public BaseResponse list(SysMenu menu){
         LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
         Long userId = loginUser.getUser().getUserId();
@@ -49,6 +52,7 @@ public class SysMenuController extends BaseController {
      * 获取菜单详情
      */
     @GetMapping(value = "/{menuId}")
+    @PreAuthorize("@pe.hasPerms('system:menu:query')")
     public BaseResponse getInfo(@PathVariable Long menuId){
         return BaseResponse.success(menuService.selectMenuById(menuId));
     }
@@ -57,6 +61,7 @@ public class SysMenuController extends BaseController {
      * 新增菜单
      */
     @PostMapping
+    @PreAuthorize("@pe.isAdmin() and @pe.hasPerms('system:menu:add')")
     public BaseResponse add(@RequestBody SysMenu menu){
 
         if(UserConstants.NOT_UNIQUE.equals(menuService.checkMenuNameUnique(menu))){
@@ -73,6 +78,7 @@ public class SysMenuController extends BaseController {
      * 修改菜单
      */
     @PutMapping
+    @PreAuthorize("@pe.isAdmin() and @pe.hasPerms('system:menu:edit')")
     public BaseResponse edit(@RequestBody SysMenu menu){
         if(UserConstants.NOT_UNIQUE.equals(menuService.checkMenuNameUnique(menu))){
             return BaseResponse.fail("新增菜单" + menu.getMenuName() + "失败,菜单已经存在");
@@ -91,6 +97,7 @@ public class SysMenuController extends BaseController {
      * 删除菜单
      */
     @DeleteMapping("/{menuId}")
+    @PreAuthorize("@pe.isAdmin() and @pe.hasPerms('system:menu:remove')")
     public BaseResponse remove(@PathVariable("menuId") Long menuId){
         if(menuService.hasChildByMenuId(menuId)){
             return BaseResponse.fail("存在子菜单,不允许删除");
@@ -106,6 +113,7 @@ public class SysMenuController extends BaseController {
      * 获取菜单下拉树列表
      */
     @GetMapping("/treeselect")
+    @PreAuthorize("@pe.hasAnyPerms('system:menu:query,system:menu:add,system:menu:edit,system:role:add,system:role:edit')")
     public BaseResponse treeSelect(SysMenu menu){
         LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
         Long userId = loginUser.getUser().getUserId();
@@ -119,6 +127,7 @@ public class SysMenuController extends BaseController {
      * 加载对应角色的菜单列表
      */
     @GetMapping(value = "/roleMenuTreeselect/{roleId}")
+    @PreAuthorize("@pe.hasAnyPerms('system:role:query,system:role:edit')")
     public ChainedMap roleMenuTreeSelect(@PathVariable Long roleId){
         LoginUser loginUser = tokenService.getLoginUser(ServletUtils.getRequest());
         List<SysMenu> menuList = menuService.selectMenuList(loginUser.getUser().getUserId());

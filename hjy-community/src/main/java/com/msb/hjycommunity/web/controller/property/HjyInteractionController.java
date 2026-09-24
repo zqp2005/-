@@ -35,6 +35,7 @@ public class HjyInteractionController extends BaseController {
      * 导出社区互动数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:interaction:export')")
     public void export(HjyInteraction interaction, HttpServletResponse response) {
         List<HjyInteraction> list = interactionService.selectInteractionList(interaction);
         List<HjyInteractionExcelDto> dtoList = list.stream().map(item -> {

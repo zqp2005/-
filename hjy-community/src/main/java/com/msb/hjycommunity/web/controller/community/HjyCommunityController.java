@@ -40,6 +40,7 @@ public class HjyCommunityController extends BaseController {
      * 导出小区数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:community:export')")
     public void export(HjyCommunity hjyCommunity, HttpServletResponse response) {
         List<HjyCommunityDto> list = hjyCommunityService.queryList(hjyCommunity);
         List<HjyCommunityExcelDto> dtoList = list.stream().map(item -> {
@@ -73,12 +74,14 @@ public class HjyCommunityController extends BaseController {
      */
     @PostMapping
     @Log(title = "社区管理", businessType = BusinessType.INSERT)
+    @PreAuthorize("@pe.hasPerms('system:community:add')")
     public BaseResponse add(@RequestBody HjyCommunity hjyCommunity){
 
         return toAjax(hjyCommunityService.insertHjyCommunity(hjyCommunity));
     }
 
     @GetMapping("/{communityId}")
+    @PreAuthorize("@pe.hasPerms('system:community:query')")
     public BaseResponse getInfo(@PathVariable("communityId") Long communityId ){
 
         return BaseResponse.success(hjyCommunityService.selectHjyCommunityById(communityId));
@@ -92,6 +95,7 @@ public class HjyCommunityController extends BaseController {
      */
     @PutMapping
     @Log(title = "社区管理", businessType = BusinessType.UPDATE)
+    @PreAuthorize("@pe.hasPerms('system:community:edit')")
     public BaseResponse edit(@RequestBody HjyCommunity hjyCommunity){
 
         return toAjax(hjyCommunityService.updateHjyCommunity(hjyCommunity));
@@ -104,6 +108,7 @@ public class HjyCommunityController extends BaseController {
      */
     @DeleteMapping("/{communityIds}")
     @Log(title = "社区管理", businessType = BusinessType.DELETE)
+    @PreAuthorize("@pe.hasPerms('system:community:remove')")
     public BaseResponse delete(@PathVariable Long[] communityIds){
 
         return toAjax(hjyCommunityService.deleteHjyCommunity(communityIds));

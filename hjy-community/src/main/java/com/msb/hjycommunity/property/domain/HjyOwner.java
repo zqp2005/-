@@ -2,6 +2,7 @@ package com.msb.hjycommunity.property.domain;
 
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.msb.hjycommunity.common.core.domain.BaseEntity;
 
 import java.util.Date;
@@ -197,6 +198,7 @@ public class HjyOwner extends BaseEntity {
         this.ownerType = ownerType;
     }
 
+    @JsonIgnore
     public String getOwnerPassword() {
         return ownerPassword;
     }

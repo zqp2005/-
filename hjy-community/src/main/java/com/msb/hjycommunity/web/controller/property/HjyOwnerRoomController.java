@@ -37,6 +37,7 @@ public class HjyOwnerRoomController extends BaseController {
      * 导出业主房屋绑定数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:ownerRoom:export')")
     public void export(HjyOwnerRoom ownerRoom, HttpServletResponse response) {
         List<HjyOwnerRoom> list = ownerRoomService.selectOwnerRoomList(ownerRoom);
         List<HjyOwnerRoomExcelDto> dtoList = list.stream().map(item -> {

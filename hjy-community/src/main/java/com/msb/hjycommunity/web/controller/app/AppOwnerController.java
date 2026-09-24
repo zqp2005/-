@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 /**
  * 业主端（小程序）注册/登录 Controller
  * <p>
- * 注册支持三条路径：新手机号注册、存量业主（密码为空）激活、已注册手机号拒绝。
+ * 新手机号可注册；存量档案禁止通过公开注册认领，须走可信身份核验流程。
  * 登录成功签发独立于管理端的业主令牌（JWT + Redis owner_tokens:{uuid}，7天有效）。
  *
  * @author hjy
@@ -45,7 +45,7 @@ public class AppOwnerController extends BaseController {
     private AppOwnerTokenService appOwnerTokenService;
 
     /**
-     * 业主注册（新手机号）或存量业主激活（密码为空的已导入业主）
+     * 新手机号注册；可信激活流程上线前禁止认领存量业主档案。
      */
     @PostMapping("/register")
     public BaseResponse register(@RequestBody AppRegisterRequest body) {
@@ -71,24 +71,18 @@ public class AppOwnerController extends BaseController {
             return BaseResponse.fail("该手机号已注册，请直接登录");
         }
 
-        String encrypted = SecurityUtils.encryptPassword(password);
         if (exist != null) {
-            // 存量业主激活：补密码；姓名为空时补填
-            HjyOwner update = new HjyOwner();
-            update.setOwnerId(exist.getOwnerId());
-            update.setOwnerPassword(encrypted);
-            if (trimToNull(exist.getOwnerRealName()) == null) {
-                update.setOwnerRealName(realName);
-            }
-            ownerService.updateOwner(update);
-            return BaseResponse.success(buildOwnerData(exist.getOwnerId(), realName));
+            return BaseResponse.fail("该手机号已有居民档案，暂不支持自助激活，请联系物业核验身份");
         }
 
+        String encrypted = SecurityUtils.encryptPassword(password);
         HjyOwner owner = new HjyOwner();
         owner.setOwnerPhoneNumber(phone);
         owner.setOwnerRealName(realName);
         owner.setOwnerIdCard(idCard);
         owner.setOwnerPassword(encrypted);
+        // 数据库该列无默认值；注册账号可登录，但不代表通过房屋身份核验。
+        owner.setOwnerStatus("Enable");
         // 性别/年龄（选填，白名单校验后写入）
         String gender = trimToNull(body.getOwnerGender());
         if ("Male".equals(gender) || "Female".equals(gender)) {
@@ -114,7 +108,8 @@ public class AppOwnerController extends BaseController {
         }
 
         HjyOwner owner = ownerService.selectOwnerByPhone(phone);
-        if (owner == null || owner.getOwnerPassword() == null || owner.getOwnerPassword().trim().isEmpty()
+        if (owner == null || !"Enable".equals(owner.getOwnerStatus())
+                || owner.getOwnerPassword() == null || owner.getOwnerPassword().trim().isEmpty()
                 || !new BCryptPasswordEncoder().matches(password, owner.getOwnerPassword())) {
             return BaseResponse.fail("手机号或密码错误");
         }

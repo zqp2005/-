@@ -1,5 +1,7 @@
 package com.msb.hjycommunity.web.controller.system;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletResponse;
 import com.msb.hjycommunity.system.domain.dto.SysDictTypeExcelDto;
@@ -33,6 +35,7 @@ public class SysDictTypeController extends BaseController {
      * 导出字典类型数据（Excel流下载）
      */
     @GetMapping("/export")
+    @PreAuthorize("@pe.hasPerms('system:dict:export')")
     public void export(SysDictType dictType, HttpServletResponse response) {
         List<SysDictType> list = sysDictTypeService.selectDictTypeList(dictType);
         List<SysDictTypeExcelDto> dtoList = list.stream().map(item -> {
@@ -48,6 +51,7 @@ public class SysDictTypeController extends BaseController {
      * 多条件分页查询字典类型数据
      */
     @GetMapping("/list")
+    @PreAuthorize("@pe.hasPerms('system:dict:list')")
     public PageResult list(SysDictType dictType){
         startPage();
         List<SysDictType> list = sysDictTypeService.selectDictTypeList(dictType);
@@ -58,6 +62,7 @@ public class SysDictTypeController extends BaseController {
      * 根据Id查询字典类型详细信息
      */
     @GetMapping(value = "/{dictId}")
+    @PreAuthorize("@pe.hasPerms('system:dict:query')")
     public BaseResponse getInfo(@PathVariable Long dictId){
         return BaseResponse.success(sysDictTypeService.selectDictTypeById(dictId));
     }
@@ -66,6 +71,7 @@ public class SysDictTypeController extends BaseController {
      * 新增字典类型
      */
     @PostMapping
+    @PreAuthorize("@pe.hasPerms('system:dict:add')")
     public BaseResponse add(@RequestBody SysDictType sysDictType){
 
         if(UserConstants.NOT_UNIQUE.equals(sysDictTypeService.checkDictTypeUnique(sysDictType))){
@@ -79,6 +85,7 @@ public class SysDictTypeController extends BaseController {
      * 修改字典类型
      */
     @PutMapping
+    @PreAuthorize("@pe.hasPerms('system:dict:edit')")
     public BaseResponse edit(@RequestBody SysDictType sysDictType){
         if(UserConstants.NOT_UNIQUE.equals(sysDictTypeService.checkDictTypeUnique(sysDictType))){
             return BaseResponse.fail("修改字典" + sysDictType.getDictName() + "失败,字典类型已经存在");
@@ -91,6 +98,7 @@ public class SysDictTypeController extends BaseController {
      * 删除字典类型
      */
     @DeleteMapping("/{dictIds}")
+    @PreAuthorize("@pe.hasPerms('system:dict:remove')")
     public BaseResponse remove(@PathVariable Long[] dictIds){
         return toAjax(sysDictTypeService.deleteDictTypeByIds(dictIds));
     }
@@ -99,6 +107,7 @@ public class SysDictTypeController extends BaseController {
      * 清空缓存
      */
     @DeleteMapping("/clearCache")
+    @PreAuthorize("@pe.hasPerms('system:dict:remove')")
     public BaseResponse clearCache(){
         sysDictTypeService.clearCache();
         return BaseResponse.success("清除缓存成功");
