@@ -66,13 +66,13 @@ public class ChatController {
      * @param servletRequest servlet 请求，携带鉴权过滤器写入的用户身份
      * @return Flux 流式响应，每段内容以 "data: " 开头
      */
-    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> chatStream(@Valid @RequestBody ChatRequest request, HttpServletRequest servletRequest) {
+    @PostMapping(value = "/chat/stream", produces = "text/event-stream;charset=UTF-8")
+    public Flux<org.springframework.http.codec.ServerSentEvent<String>> chatStream(@Valid @RequestBody ChatRequest request, HttpServletRequest servletRequest) {
         fillUserIdentity(request, servletRequest);
         log.info("收到流式聊天请求 - userId: {}, sessionId: {}, message: {}",
                 request.getUserId(), request.getSessionId(), request.getMessage());
 
-        return chatService.chatStream(request);
+        return chatService.chatStream(request).map(content -> org.springframework.http.codec.ServerSentEvent.builder(content).build());
     }
 
     /**

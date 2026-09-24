@@ -3,15 +3,6 @@
 
 <mapper namespace="com.msb.hjycommunity.system.mapper.SysRoleMapper">
 
-    <select id="selectRolePermissionByUserId" parameterType="Long" resultType="String">
-        SELECT DISTINCT
-            DISTINCT r.role_key
-        FROM sys_role r
-            LEFT JOIN sys_user_role ur ON ur.role_id = r.role_id
-            LEFT JOIN sys_user u ON u.user_id = ur.user_id
-        WHERE r.del_flag = '0' AND ur.user_id = #{userId}
-    </select>
-
     <resultMap type="SysRole" id="SysRoleResult">
         <id     property="roleId"             column="role_id"               />
         <result property="roleName"           column="role_name"             />
@@ -36,7 +27,7 @@
         FROM sys_role sr
                  LEFT JOIN sys_user_role sur ON sr.role_id = sur.role_id
                  LEFT JOIN sys_user su ON sur.user_id = su.user_id
-        WHERE sur.user_id = #{userId}
+        WHERE sur.user_id = #{userId} AND sr.status = '0' AND sr.del_flag = '0'
     </select>
 
     <sql id="selectRoleVo">

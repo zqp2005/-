@@ -85,6 +85,7 @@ MySQL 8，本地 `127.0.0.1:3306`，账号 root/123456（真实值在 `hjy-commu
 
 ### 核心模式
 
+- **居民本人列表**：新工单用现有 create_by 保存 `owner:居民ID`，仅由 AppAuthFilter 从认证身份生成。小程序列表按此精确查询，不再按姓名/手机号匹配；旧工单与管理端代录不猜测认领。管理账号禁用 owner: 前缀，完整服务对象/社区范围未实现。
 - **BaseController**（`common.core.controller.BaseController`）：提供 `getDataTable()` 用于分页响应，`startPage()` 用于启动 PageHelper 分页。所有控制器继承此类。
 - **统一响应**：`R<T>` 封装所有 API 返回，包含 code/message/data。`BaseResponse` 是其旧版替代方案。
 - **BaseEntity**：领域实体基类，通过 MyBatis-Plus 元对象处理器自动填充 `createTime`、`updateTime`、`createBy`、`updateBy`。
@@ -124,7 +125,7 @@ Spring Boot 3.2.5 + Spring AI 1.0.0，使用 DeepSeek 模型（deepseek-chat）�
 - `ChatClientConfig` 中构建 `ChatClient` Bean：注入六大工具 + `defaultSystem()` 加载 `resources/prompt/system-prompt.txt`（系统提示词外置，强制工具调用规则，避免幻觉）。
 - `tools/` 包中的 `@Tool` 注解方法由 Spring AI 自动发现。AI 根据用户意图决定调用哪个工具。
 - **会话记忆持久化在 Redis**：`RedisChatMemoryRepository`（key `ai:chat:memory:{sessionId}`）+ `MessageWindowChatMemory`（20 条窗口），重启不丢会话。
-- Controller 统一走 Service 调用链（同步与流式的拦截逻辑、用户信息注入都在 `ChatServiceImpl`）；SSE 每元素 `data: xxx\n\n`，正常结束以 `data: [DONE]` 收尾。
+- Controller 统一走 Service 调用链（同步与流式的拦截逻辑、用户信息注入都在 `ChatServiceImpl`）；SSE 由 Controller 的 ServerSentEvent 原生编码，UTF-8 字符串转换保留中文/多行，正常结束以 `data: [DONE]` 收尾。
 - `HjyCommunityClient` 只以当前调用者令牌查询主后端；工具边界恢复/清理线程身份，查询失败不得当作空列表。真实账单未上线，不生成欠费金额；AI 写操作暂拒绝。
 - WebFlux 实现流式对话（SSE），端点：`POST /ai/chat`、`POST /ai/chat/stream`、`DELETE /ai/session/{sessionId}`、`GET /ai/health`。
 - 单元测试覆盖 JWT 解析、工具身份隔离、调用者令牌透传与拒绝写操作。
@@ -170,3 +171,7 @@ hjy-ai-service ← SSE ← hjy-mcp-server（8091，提供登录地址定位/天�
 - 每批完成后同步更新对应仓库 README.md，说明已实现行为、验证结果、部署变化和仍未完成事项。
 - 业务目标与分批状态见 `doc/业务规则与分批实施基线.md`；房屋关联不等于实际入住，已停止状态联动；独立入住登记及历史核验仍待实施。
 - 后端、前端每批验证后仅提交本批文件并推送；小程序不提交推送；未经用户要求不动 dev 分支，保留原有未提交修改。
+
+## 当前范围（2026-09-24 最新确认）
+
+按毕设尺度优先疏通建档、关联、报修、投诉、查询；暂缓复杂审批、验收返工、收费、消息中心及数据库升级。见 `doc/毕设核心业务与测试指南.md`。无需为了满足旧远期规划扩大范围。

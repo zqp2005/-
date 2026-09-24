@@ -11,6 +11,8 @@ import java.util.List;
  */
 public interface HjyRepairMapper extends BaseMapper<HjyRepair> {
 
+    List<com.msb.hjycommunity.property.domain.vo.RepairWorkerVo> selectEligibleWorkers();
+
     /**
      * 查询报修列表
      */

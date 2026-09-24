@@ -33,7 +33,7 @@ public class ChatServiceImpl implements ChatService {
     private static final Set<String> GREETING_KEYWORDS = Set.of("你好", "hi", "hello", "在吗", "您好", "嗨", "hey");
 
     /** SSE 流结束标记：所有正常完成的流都以该标记收尾，前端收到后结束加载状态 */
-    private static final String SSE_DONE = "data: [DONE]\n\n";
+    private static final String SSE_DONE = "[DONE]";
 
     public ChatServiceImpl(ChatClient chatClient, ChatMemory chatMemory, PromptTemplate promptTemplate) {
         this.chatClient = chatClient;
@@ -92,16 +92,16 @@ public class ChatServiceImpl implements ChatService {
     @Override
     public Flux<String> chatStream(ChatRequest request) {
         String message = request.getMessage();
-        // 与同步接口相同的短路拦截（同样包装为 "data: ...\n\n" 并以 [DONE] 收尾）
+        // 与同步接口相同的短路拦截（返回原始内容，由 Controller 原生 SSE 编码并以 [DONE] 收尾）
         if (message == null || message.trim().isEmpty()) {
-            return Flux.just("data: " + PromptTemplate.GREETING + "\n\n", SSE_DONE);
+            return Flux.just(PromptTemplate.GREETING, SSE_DONE);
         }
         String lowerMessage = message.trim().toLowerCase();
         if (GREETING_KEYWORDS.contains(lowerMessage)) {
-            return Flux.just("data: " + PromptTemplate.GREETING + "\n\n" + PromptTemplate.HELP_PROMPT + "\n\n", SSE_DONE);
+            return Flux.just(PromptTemplate.GREETING + "\n\n" + PromptTemplate.HELP_PROMPT, SSE_DONE);
         }
         if (lowerMessage.contains("帮助") || lowerMessage.contains("能做什么") || lowerMessage.contains("有什么服务")) {
-            return Flux.just("data: " + PromptTemplate.HELP_PROMPT + "\n\n", SSE_DONE);
+            return Flux.just(PromptTemplate.HELP_PROMPT, SSE_DONE);
         }
 
         return chatClient.prompt()
@@ -110,11 +110,10 @@ public class ChatServiceImpl implements ChatService {
                 .advisors(advisorSpec -> advisorSpec.param(ChatMemory.CONVERSATION_ID, conversationId(request)))
                 .stream()
                 .content()
-                .map(content -> "data: " + content + "\n\n")
                 .concatWith(Flux.just(SSE_DONE))
                 .onErrorResume(e -> {
                     log.error("流式对话异常: {}", e.getMessage(), e);
-                    return Flux.just("data: AI服务暂时无法响应，请稍后重试。\n\n");
+                    return Flux.just("AI服务暂时无法响应，请稍后重试。", SSE_DONE);
                 });
     }
 

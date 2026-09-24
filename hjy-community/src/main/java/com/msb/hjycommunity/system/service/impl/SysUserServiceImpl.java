@@ -30,6 +30,12 @@ import java.util.Objects;
 @Service
 public class SysUserServiceImpl implements SysUserService {
 
+    private void rejectReservedUserName(SysUser user) {
+        if (user.getUserName() != null && user.getUserName().trim().toLowerCase(java.util.Locale.ROOT).startsWith("owner:")) {
+            throw new CustomException(400, "owner: 为居民提交者保留前缀，管理账号不可使用");
+        }
+    }
+
     @Resource
     private SysUserMapper userMapper;
 
@@ -145,6 +151,7 @@ public class SysUserServiceImpl implements SysUserService {
      */
     @Override
     public int updateUserStatus(SysUser user) {
+        rejectReservedUserName(user);
         return userMapper.updateUser(user);
     }
 
@@ -156,6 +163,7 @@ public class SysUserServiceImpl implements SysUserService {
      */
     @Override
     public int updateUserProfile(SysUser user) {
+        rejectReservedUserName(user);
 
         return userMapper.updateUser(user);
     }
@@ -180,6 +188,7 @@ public class SysUserServiceImpl implements SysUserService {
      */
     @Override
     public int resetPwd(SysUser user) {
+        rejectReservedUserName(user);
         return userMapper.updateUser(user);
     }
 
@@ -226,6 +235,7 @@ public class SysUserServiceImpl implements SysUserService {
      */
     @Override
     public int insertUser(SysUser user) {
+        rejectReservedUserName(user);
         //新增用户
         int row = userMapper.insertUser(user);
 
@@ -291,6 +301,7 @@ public class SysUserServiceImpl implements SysUserService {
     @Override
     @Transactional
     public int updateUser(SysUser user) {
+        rejectReservedUserName(user);
         Long userId = user.getUserId();
 
         // 删除用户与角色关联

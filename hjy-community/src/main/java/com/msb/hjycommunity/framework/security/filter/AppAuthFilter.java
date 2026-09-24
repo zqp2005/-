@@ -92,9 +92,17 @@ public class AppAuthFilter extends OncePerRequestFilter {
         request.setAttribute(ATTR_OWNER_ID, ownerToken.getOwnerId());
         request.setAttribute(ATTR_OWNER_NAME, ownerToken.getRealName());
         request.setAttribute(ATTR_OWNER_PHONE, ownerToken.getPhone());
-        setSecurityContext(ownerToken.getRealName(), ownerToken.getOwnerId());
+        setSecurityContext(ownerOperator(ownerToken.getOwnerId()), ownerToken.getOwnerId());
 
         filterChain.doFilter(request, response);
+    }
+
+    /** 使用现有 create_by 保存提交者，不把姓名/手机号当身份。仅覆盖升级后本人提交的工单。 */
+    public static String ownerOperator(Object ownerId) {
+        if (!(ownerId instanceof Long) || ((Long) ownerId) <= 0) {
+            throw new com.msb.hjycommunity.common.core.exception.CustomException(401, "缺少有效居民身份");
+        }
+        return "owner:" + ownerId;
     }
 
     private boolean isWhiteList(String uri) {

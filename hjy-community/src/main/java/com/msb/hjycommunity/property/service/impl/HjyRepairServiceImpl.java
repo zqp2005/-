@@ -36,6 +36,11 @@ public class HjyRepairServiceImpl implements HjyRepairService {
     }
 
     @Override
+    public List<com.msb.hjycommunity.property.domain.vo.RepairWorkerVo> selectEligibleWorkers() {
+        return repairMapper.selectEligibleWorkers();
+    }
+
+    @Override
     public HjyRepair selectRepairById(Long repairId) {
         return repairMapper.selectRepairById(repairId);
     }

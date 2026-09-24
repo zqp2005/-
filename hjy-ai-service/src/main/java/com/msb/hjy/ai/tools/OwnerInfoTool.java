@@ -3,319 +3,63 @@ package com.msb.hjy.ai.tools;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msb.hjy.ai.client.HjyCommunityClient;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * 业主信息工具 - AI 可调用的业主相关函数
- * <p>
- * 提供业主信息查询、车辆信息、家庭成员、访客记录和访客登记功能。
- * 通过 @Tool 注解注册为 Spring AI Function Calling 的工具。
- */
-@Slf4j
 @Component
 public class OwnerInfoTool {
+    @Autowired private HjyCommunityClient communityClient;
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    /** 社区后端 HTTP 客户端 */
-    @Autowired
-    private HjyCommunityClient communityClient;
-
-    /** JSON 解析器 */
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    /**
-     * 查询业主信息
-     *
-     * @param ownerName 业主姓名
-     * @param phone     联系电话
-     * @return 业主信息列表
-     */
-    @Tool(description = "查询业主信息。用于回答'我的信息'、'业主信息'、'查一下我的信息'等问题")
-    public String queryOwnerInfo(
-            @ToolParam(description = "业主姓名") String ownerName,
-            @ToolParam(description = "联系电话") String phone) {
-        log.info("查询业主信息 - ownerName: {}, phone: {}", ownerName, phone);
-
+    @Tool(description = "管理人员按条件查询授权范围内业主档案；姓名手机号只是检索条件，不是本人身份证明")
+    public String queryOwnerInfo(@ToolParam(description = "业主姓名") String ownerName,
+                                 @ToolParam(description = "联系电话") String phone) {
+        if ((ownerName == null || ownerName.isBlank()) && (phone == null || phone.isBlank())) {
+            return "请提供档案检索条件；管理账号不等于居民账号，不能推断哪条档案是本人。";
+        }
+        Map<String, Object> params = new HashMap<>(Map.of("pageNum", 1, "pageSize", 5));
+        if (ownerName != null && !ownerName.isBlank()) params.put("ownerRealName", ownerName);
+        if (phone != null && !phone.isBlank()) params.put("ownerPhoneNumber", phone);
         try {
-            String result = communityClient.get("/system/owner/list");
-            JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("rows");
-
-            if (!data.isArray() || data.isEmpty()) {
-                return "当前暂无业主记录。";
+            JsonNode root = mapper.readTree(communityClient.get("/system/owner/list", params));
+            JsonNode rows = root.path("rows");
+            if (!rows.isArray()) return "业主查询响应格式异常。";
+            if (rows.isEmpty()) return "当前查询条件下没有业主记录。";
+            StringBuilder out = new StringBuilder("【业主档案，本页结果；不代表已确认本人身份】\n");
+            for (JsonNode row : rows) {
+                String contact = row.path("ownerPhoneNumber").asText("");
+                String masked = contact.matches("\\d{11}") ? contact.substring(0, 3) + "****" + contact.substring(7) : "未展示";
+                out.append("编号：").append(row.path("ownerId").asText()).append("；姓名：")
+                   .append(row.path("ownerRealName").asText()).append("；电话：").append(masked)
+                   .append("；状态：").append(row.path("ownerStatus").asText("未知"))
+                   .append("；关联房屋：").append(row.path("roomName").asText("未提供")).append("\n");
             }
-
-            StringBuilder sb = new StringBuilder();
-            int count = 0;
-
-            for (JsonNode item : data) {
-                if (count >= 5) break;
-
-                String itemName = item.path("ownerRealName").asText();
-                String itemPhone = item.path("ownerPhoneNumber").asText("");
-
-                if (ownerName != null && !ownerName.isEmpty() && !itemName.contains(ownerName)) {
-                    continue;
-                }
-                if (phone != null && !phone.isEmpty() && !itemPhone.contains(phone)) {
-                    continue;
-                }
-
-                if (count == 0) {
-                    sb.append("【业主信息查询结果】\n\n");
-                }
-
-                sb.append("【业主信息】\n");
-                sb.append("  业主ID：").append(item.path("ownerId").asText()).append("\n");
-                sb.append("  姓名：").append(itemName).append("\n");
-                sb.append("  性别：").append(formatGender(item.path("ownerGender").asText())).append("\n");
-                sb.append("  联系电话：").append(itemPhone).append("\n");
-                sb.append("  房屋信息：").append(item.path("roomName").asText("未绑定")).append("\n");
-                sb.append("  业主状态：").append(formatStatus(item.path("ownerStatus").asText())).append("\n");
-                sb.append("\n");
-                count++;
-            }
-
-            if (count == 0) {
-                return "未找到符合条件的业主信息\n";
-            }
-
-            sb.append("共查询到 ").append(count).append(" 条业主记录\n");
-            return sb.toString();
-
-        } catch (Exception e) {
-            log.error("查询业主信息失败: {}", e.getMessage());
-            return "查询业主信息失败，请稍后重试。";
-        }
+            return out.append("符合查询条件总数：").append(root.path("total").asText("未知")).toString();
+        } catch (Exception e) { return "业主查询失败或无权访问，不能据此判断没有档案。"; }
     }
 
-    /**
-     * 查询业主车辆信息
-     *
-     * @param ownerName 业主姓名
-     * @return 车辆信息
-     */
-    @Tool(description = "查询业主车辆信息。用于回答'车辆信息'、'车牌号'、'我的车'等问题")
-    public String getOwnerVehicles(
-            @ToolParam(description = "业主姓名") String ownerName) {
-        log.info("查询业主车辆信息 - ownerName: {}", ownerName);
-
-        if (ownerName == null || ownerName.isEmpty()) {
-            return "请提供业主姓名。";
-        }
-
-        try {
-            String result = communityClient.get("/system/owner/list");
-            JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("rows");
-
-            if (!data.isArray() || data.isEmpty()) {
-                return "当前暂无业主记录。";
-            }
-
-            for (JsonNode item : data) {
-                String itemName = item.path("ownerRealName").asText();
-                if (itemName.contains(ownerName)) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("【业主车辆信息】\n\n");
-                    sb.append("  业主：").append(itemName).append("\n");
-
-                    String carNo = item.path("carNo").asText();
-                    if (carNo != null && !carNo.isEmpty() && !"null".equals(carNo)) {
-                        sb.append("  车牌号：").append(carNo).append("\n");
-                        sb.append("  车辆品牌：").append(item.path("carBrand").asText("未知")).append("\n");
-                        sb.append("  车辆颜色：").append(item.path("carColor").asText("未知")).append("\n");
-                    } else {
-                        sb.append("  暂无登记车辆信息\n");
-                    }
-
-                    return sb.toString();
-                }
-            }
-            return "未找到该业主的车辆信息，请检查姓名是否正确。";
-
-        } catch (Exception e) {
-            log.error("查询车辆信息失败: {}", e.getMessage());
-            return "查询车辆信息失败，请稍后重试。";
-        }
+    @Tool(description = "说明车辆台账接入状态")
+    public String getOwnerVehicles(@ToolParam(description = "业主姓名") String ownerName) {
+        return "尚未接入车辆台账，不能用业主档案缺少车辆字段推断没有车辆。";
     }
-
-    /**
-     * 查询家庭成员信息
-     *
-     * @param ownerName 业主姓名
-     * @return 家庭成员信息
-     */
-    @Tool(description = "查询家庭成员信息。用于回答'家庭成员'、'家人信息'、'有几口人'等问题")
-    public String getFamilyMembers(
-            @ToolParam(description = "业主姓名") String ownerName) {
-        log.info("查询家庭成员 - ownerName: {}", ownerName);
-
-        if (ownerName == null || ownerName.isEmpty()) {
-            return "请提供业主姓名。";
-        }
-
-        try {
-            String result = communityClient.get("/system/owner/list");
-            JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("rows");
-
-            if (!data.isArray() || data.isEmpty()) {
-                return "当前暂无业主记录。";
-            }
-
-            for (JsonNode item : data) {
-                String itemName = item.path("ownerRealName").asText();
-                if (itemName.contains(ownerName)) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("【家庭成员信息】\n\n");
-                    sb.append("  户主：").append(itemName).append("\n");
-                    sb.append("  联系电话：").append(item.path("ownerPhoneNumber").asText()).append("\n");
-                    sb.append("  房屋信息：").append(item.path("roomName").asText("未绑定")).append("\n");
-                    sb.append("\n  注：更多家庭成员信息请联系物业服务中心查询\n");
-
-                    return sb.toString();
-                }
-            }
-            return "未找到该业主信息，请检查姓名是否正确。";
-
-        } catch (Exception e) {
-            log.error("查询家庭成员失败: {}", e.getMessage());
-            return "查询家庭成员信息失败，请稍后重试。";
-        }
+    @Tool(description = "说明家庭关系接入状态")
+    public String getFamilyMembers(@ToolParam(description = "业主姓名") String ownerName) {
+        return "尚未接入可核验的家庭关系，房屋共同关联不等于家庭成员，不提供推测名单。";
     }
-
-    /**
-     * 查询访客登记信息
-     *
-     * @param ownerName 业主姓名
-     * @param date      日期
-     * @return 访客记录列表
-     */
-    @Tool(description = "查询访客登记信息。用于回答'访客'、'有谁来过了'、'访客记录'等问题")
-    public String queryVisitors(
-            @ToolParam(description = "业主姓名") String ownerName,
-            @ToolParam(description = "日期，格式：yyyy-MM-dd") String date) {
-        log.info("查询访客记录 - ownerName: {}, date: {}", ownerName, date);
-
-        try {
-            String result = communityClient.get("/system/visitor/list");
-            JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("rows");
-
-            if (!data.isArray() || data.isEmpty()) {
-                return "暂无访客登记记录。";
-            }
-
-            StringBuilder sb = new StringBuilder();
-            int count = 0;
-
-            for (JsonNode item : data) {
-                if (count >= 5) break;
-
-                if (ownerName != null && !ownerName.isEmpty()) {
-                    String visitorOwner = item.path("ownerRealName").asText();
-                    if (!visitorOwner.contains(ownerName)) {
-                        continue;
-                    }
-                }
-
-                if (count == 0) {
-                    sb.append("【访客登记记录】\n\n");
-                }
-
-                sb.append("【访客】\n");
-                sb.append("  访客姓名：").append(item.path("visitorName").asText()).append("\n");
-                sb.append("  来访时间：").append(item.path("visitTime").asText()).append("\n");
-                sb.append("  离开时间：").append(item.path("leaveTime").asText("未离开")).append("\n");
-                sb.append("  来访事由：").append(item.path("visitReason").asText()).append("\n");
-                sb.append("\n");
-                count++;
-            }
-
-            if (count == 0) {
-                return "未找到符合条件的访客记录。";
-            }
-
-            sb.append("共查询到 ").append(count).append(" 条访客记录");
-            return sb.toString();
-
-        } catch (Exception e) {
-            log.error("查询访客记录失败: {}", e.getMessage());
-            return "查询访客记录失败，请稍后重试。";
-        }
+    @Tool(description = "说明按居民查询访客记录的能力边界")
+    public String queryVisitors(@ToolParam(description = "业主姓名") String ownerName,
+                               @ToolParam(description = "日期") String date) {
+        return "访客记录尚无可靠的被访居民关联及离场核验，不能按姓名推断谁来访或是否离开，请在授权的访客管理页面核验。";
     }
-
-    /**
-     * 登记访客信息
-     *
-     * @param visitorName  访客姓名
-     * @param visitorPhone 访客电话
-     * @param ownerName    被访业主姓名
-     * @param reason       来访事由
-     * @return 登记结果
-     */
-    @Tool(description = "登记访客信息。用于回答'登记访客'、'有人来访'等问题")
-    public String registerVisitor(
-            @ToolParam(description = "访客姓名") String visitorName,
-            @ToolParam(description = "访客电话") String visitorPhone,
-            @ToolParam(description = "被访业主姓名") String ownerName,
-            @ToolParam(description = "来访事由") String reason) {
-        log.info("登记访客 - visitorName: {}, ownerName: {}", visitorName, ownerName);
-
-        if (visitorName == null || visitorName.isEmpty()) {
-            return "请提供访客姓名。";
-        }
-        if (ownerName == null || ownerName.isEmpty()) {
-            return "请提供被访业主姓名。";
-        }
-
-        try {
-            java.util.Map<String, Object> body = new java.util.HashMap<>();
-            body.put("visitorName", visitorName);
-            body.put("visitorPhone", visitorPhone != null ? visitorPhone : "");
-            body.put("ownerName", ownerName);
-            body.put("visitReason", reason != null ? reason : "探访");
-            body.put("visitTime", java.time.LocalDateTime.now().toString());
-
-            String result = communityClient.post("/system/visitor", body);
-            JsonNode root = objectMapper.readTree(result);
-
-            if (root.path("code").asInt() == 200) {
-                return String.format("""
-                        访客登记成功！
-
-                        【登记信息】
-                        访客：%s
-                        被访业主：%s
-                        来访事由：%s
-                        来访时间：%s
-
-                        请提醒被访业主迎接。
-                        """, visitorName, ownerName, 
-                        reason != null ? reason : "探访",
-                        java.time.LocalDateTime.now().toString());
-            } else {
-                return "访客登记失败：" + root.path("msg").asText();
-            }
-
-        } catch (Exception e) {
-            log.error("登记访客失败: {}", e.getMessage());
-            return "访客登记失败，请稍后重试。";
-        }
-    }
-
-    /** 格式化性别为中文 */
-    private String formatGender(String gender) {
-        if (gender == null || gender.isEmpty()) return "未知";
-        return "Male".equalsIgnoreCase(gender) ? "男" : "Female".equalsIgnoreCase(gender) ? "女" : "未知";
-    }
-
-    /** 格式化业主状态为中文 */
-    private String formatStatus(String status) {
-        return "Enable".equals(status) ? "正常" : "Disable".equals(status) ? "停用" : "未知";
+    @Tool(description = "说明访客登记入口")
+    public String registerVisitor(@ToolParam(description = "访客姓名") String visitorName,
+                                  @ToolParam(description = "访客电话") String visitorPhone,
+                                  @ToolParam(description = "被访人姓名") String ownerName,
+                                  @ToolParam(description = "事由") String reason) {
+        return "AI 访客登记尚未开放，请在业务页面核对资料并提交。";
     }
 }

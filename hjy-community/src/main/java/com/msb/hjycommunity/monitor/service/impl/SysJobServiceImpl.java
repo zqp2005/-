@@ -69,7 +69,7 @@ public class SysJobServiceImpl implements SysJobService {
 
     @Override
     public int runJob(SysJob job) {
-        return 1;
+        throw new com.msb.hjycommunity.common.core.exception.CustomException(501, "任务执行器尚未接入，未执行任何任务");
     }
 
     @Override

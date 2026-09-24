@@ -80,7 +80,7 @@ public class RepairTool {
                 }
 
                 sb.append("【报修单】\n");
-                sb.append("  工单号：").append(item.path("repairId").asText()).append("\n");
+                sb.append("  工单号：").append(item.path("repairNum").asText()).append("；记录ID：").append(item.path("repairId").asText()).append("\n");
                 sb.append("  业主：").append(itemOwnerName).append("\n");
                 sb.append("  问题：").append(substring(item.path("repairContent").asText(), 30)).append("\n");
                 sb.append("  状态：").append(formatState(repairState)).append("\n");
@@ -181,7 +181,23 @@ public class RepairTool {
         }
 
         try {
-            String result = communityClient.get("/system/repair/" + repairId);
+            String recordId = repairId.trim();
+            if (recordId.startsWith("RX")) {
+                JsonNode matches = objectMapper.readTree(communityClient.get("/system/repair/list",
+                        Map.of("repairNum", recordId, "pageNum", 1, "pageSize", 20))).path("rows");
+                String exactId = null;
+                if (!matches.isArray()) return "工单查询响应格式异常。";
+                for (JsonNode row : matches) {
+                    if (recordId.equals(row.path("repairNum").asText())) {
+                        if (exactId != null) return "存在重复工单号，请提供列表中的记录ID。";
+                        exactId = row.path("repairId").asText();
+                    }
+                }
+                if (exactId == null) return "本页未找到完全匹配的工单号，请通过报修页面确认记录ID。";
+                recordId = exactId;
+            }
+            if (!recordId.matches("[0-9]{1,19}")) return "请提供有效工单号或数字记录ID。";
+            String result = communityClient.get("/system/repair/" + recordId);
             JsonNode root = objectMapper.readTree(result);
             JsonNode data = root.path("data");
 
@@ -191,12 +207,11 @@ public class RepairTool {
 
             StringBuilder sb = new StringBuilder();
             sb.append("【报修单详情】\n");
-            sb.append("  工单号：").append(data.path("repairId").asText()).append("\n");
+            sb.append("  工单号：").append(data.path("repairNum").asText()).append("；记录ID：").append(data.path("repairId").asText()).append("\n");
             sb.append("  业主：").append(data.path("ownerRealName").asText()).append("\n");
             sb.append("  联系电话：").append(data.path("ownerPhoneNumber").asText()).append("\n");
             sb.append("  报修位置：").append(data.path("address").asText()).append("\n");
             sb.append("  问题描述：").append(data.path("repairContent").asText()).append("\n");
-            sb.append("  报修类别：").append(data.path("repairCategory").asText()).append("\n");
             sb.append("  状态：").append(formatState(data.path("repairState").asText())).append("\n");
             sb.append("  提交时间：").append(data.path("createTime").asText()).append("\n");
 

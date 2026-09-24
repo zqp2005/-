@@ -176,6 +176,7 @@ public class ComplaintTool {
         if (complaintId == null || complaintId.isEmpty()) {
             return "请提供投诉建议编号。";
         }
+        if (!complaintId.matches("[0-9]{1,19}")) return "请提供数字投诉建议编号。";
 
         try {
             String result = communityClient.get("/system/suggest/" + complaintId);

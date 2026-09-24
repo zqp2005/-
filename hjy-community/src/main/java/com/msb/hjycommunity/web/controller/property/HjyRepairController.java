@@ -32,6 +32,12 @@ public class HjyRepairController extends BaseController {
     @Resource
     private HjyRepairService repairService;
 
+    @GetMapping("/workers")
+    @PreAuthorize("@pe.hasPerms('system:repair:assign')")
+    public BaseResponse workers() {
+        return BaseResponse.success(repairService.selectEligibleWorkers());
+    }
+
     /**
      * 导出报修工单数据（Excel流下载）
      */

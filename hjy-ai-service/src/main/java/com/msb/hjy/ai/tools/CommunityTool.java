@@ -3,364 +3,50 @@ package com.msb.hjy.ai.tools;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msb.hjy.ai.client.HjyCommunityClient;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import java.util.Map;
 
-/**
- * 社区信息工具类 —— 提供社区基本信息、设施、周边配套、门禁卡、便民服务等查询功能
- * 通过 Spring AI @Tool 注解注册为 AI 可调用的函数
- */
-@Slf4j
+/** 只展示主后端真实字段，不用示例数据填补业务空白。 */
 @Component
 public class CommunityTool {
+    @Autowired private HjyCommunityClient communityClient;
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    /** 社区后端 HTTP 客户端，用于调用 hjy-community 的 API */
-    @Autowired
-    private HjyCommunityClient communityClient;
-
-    /** Jackson JSON 解析器 */
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    /**
-     * 查询社区基本信息
-     *
-     * @param infoType 信息类型：basic(基本信息), property(物业信息), contact(联系方式)
-     * @return 格式化后的社区信息文本
-     */
-    @Tool(description = "查询社区基本信息。用于回答'小区介绍'、'社区信息'、'小区怎么样'等问题")
-    public String queryCommunityInfo(
-            @ToolParam(description = "信息类型：basic(基本信息), property(物业信息), contact(联系方式)") String infoType) {
-        log.info("查询社区信息 - infoType: {}", infoType);
-
+    @Tool(description = "查询权限范围内的小区名称和详细地址；未配置的物业电话等不作推断")
+    public String queryCommunityInfo(@ToolParam(description = "basic、property 或 contact") String infoType) {
         try {
-            String result = communityClient.get("/system/community/list");
-            JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("rows");
-
-            if (!data.isArray() || data.isEmpty()) {
-                return getDefaultCommunityInfo();
+            JsonNode root = mapper.readTree(communityClient.get("/community/list", Map.of("pageNum", 1, "pageSize", 10)));
+            JsonNode rows = root.path("rows");
+            if (!rows.isArray()) return "社区查询响应格式异常，请稍后重试。";
+            if (rows.isEmpty()) return "当前查询范围内没有社区记录。";
+            StringBuilder out = new StringBuilder("【社区资料，本页结果】\n");
+            for (JsonNode row : rows) {
+                out.append("小区：").append(row.path("communityName").asText("未登记"))
+                   .append("；地址：").append(row.path("communityDetailedAddress").asText("未登记")).append("\n");
             }
-
-            for (JsonNode item : data) {
-                String communityName = item.path("communityName").asText("合家云社区");
-                String address = item.path("communityAddress").asText("智慧小区");
-                String builtYear = item.path("builtYear").asText("2020");
-                String totalHouseholds = item.path("totalHouseholds").asText("1500");
-                String area = item.path("area").asText("8.5");
-                String greenRate = item.path("greenRate").asText("35");
-                String parkingSpaces = item.path("parkingSpaces").asText("700");
-
-                StringBuilder sb = new StringBuilder();
-                sb.append("【社区基本信息】\n\n");
-                sb.append("  小区名称：").append(communityName).append("\n");
-                sb.append("  地址：").append(address).append("\n");
-                sb.append("  竣工时间：").append(builtYear).append("年\n");
-                sb.append("  总户数：").append(totalHouseholds).append("户\n");
-                sb.append("  占地面积：").append(area).append("万平方米\n");
-                sb.append("  绿化率：").append(greenRate).append("%\n");
-                sb.append("  停车位：").append(parkingSpaces).append("个\n");
-                sb.append("\n【配套情况】\n");
-                sb.append("  - 电梯：每栋配备\n");
-                sb.append("  - 监控：全小区覆盖\n");
-                sb.append("  - 门禁：智能化管理\n");
-                sb.append("\n如需了解更多，请告诉我具体想了解哪方面。");
-
-                return sb.toString();
-            }
-
-            return getDefaultCommunityInfo();
-
-        } catch (Exception e) {
-            log.error("查询社区信息失败: {}", e.getMessage());
-            return getDefaultCommunityInfo();
-        }
+            return out.append("总记录数：").append(root.path("total").asText("未知"))
+                    .append("。户数、配套、物业电话等未接入，不能据此推断。").toString();
+        } catch (Exception e) { return "社区查询失败或无权访问，不能据此判断没有社区。"; }
     }
 
-    /**
-     * 查询社区设施信息（休闲、运动、生活、公共设施）
-     *
-     * @return 格式化后的设施信息文本
-     */
-    @Tool(description = "查询社区设施信息。用于回答'有什么设施'、'健身房'、'游乐场'、'游泳池'等问题")
-    public String getFacilities() {
-        log.info("查询社区设施");
+    @Tool(description = "说明社区设施数据接入状态")
+    public String getFacilities() { return "尚未接入可核验的设施台账，无法确认设施、开放时间或预约规则，请以物业公告为准。"; }
 
-        return """
-                【社区设施信息】
-
-                【休闲设施】
-                - 中心花园：开放时间 6:00-22:00
-                - 儿童游乐场：开放时间 8:00-20:00
-                - 健身器材区：开放时间 6:00-22:00
-
-                【运动设施】
-                - 篮球场：开放时间 8:00-22:00
-                - 羽毛球场：需提前预约
-                - 乒乓球室：开放时间 8:00-21:00
-                - 健身房：会员制，物业前台办理
-
-                【生活设施】
-                - 快递驿站：9:00-21:00
-                - 便利超市：7:00-23:00
-                - 社区餐厅：早餐 7:00-9:00，午餐 11:30-13:30，晚餐 17:30-20:00
-                - 美容美发：9:00-21:00
-
-                【公共设施】
-                - 地下车库：24小时开放
-                - 电梯：24小时运行
-                - 监控系统：24小时运行
-                - 门禁系统：24小时运行
-
-                如需了解更多设施使用规则，请告诉我。
-                """;
+    @Tool(description = "说明周边配套数据接入状态")
+    public String getNearbyFacilities(@ToolParam(description = "配套类型") String type) {
+        return "尚未接入当前小区的周边配套数据，无法确认学校、医院、交通距离等信息。";
     }
 
-    /**
-     * 查询社区周边配套信息
-     *
-     * @param category 配套类别：traffic(交通), education(教育), medical(医疗), shopping(商业), park(公园)
-     * @return 格式化后的周边配套信息文本
-     */
-    @Tool(description = "查询周边配套信息。用于回答'周边有什么'、'附近配套'、'地铁站'、'学校'等问题")
-    public String getNearbyInfo(
-            @ToolParam(description = "配套类别：traffic(交通), education(教育), medical(医疗), shopping(商业), park(公园)") String category) {
-        log.info("查询周边配套 - category: {}", category);
-
-        try {
-            String result = communityClient.get("/system/community/nearby");
-            JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("rows");
-
-            if (!data.isArray() || data.isEmpty()) {
-                return getDefaultNearbyInfo();
-            }
-
-            StringBuilder sb = new StringBuilder();
-            sb.append("【周边配套信息】\n\n");
-
-            for (JsonNode item : data) {
-                String type = item.path("type").asText();
-                String name = item.path("name").asText();
-                String distance = item.path("distance").asText();
-                String description = item.path("description").asText();
-
-                if (category != null && !category.isEmpty() && !type.contains(category)) {
-                    continue;
-                }
-
-                sb.append(formatNearbyType(type)).append("\n");
-                sb.append("  名称：").append(name).append("\n");
-                sb.append("  距离：").append(distance).append("\n");
-                sb.append("  说明：").append(description).append("\n\n");
-            }
-
-            return sb.toString();
-
-        } catch (Exception e) {
-            log.error("查询周边配套失败: {}", e.getMessage());
-            return getDefaultNearbyInfo();
-        }
+    @Tool(description = "说明门禁办理能力边界")
+    public String getAccessCardInfo(@ToolParam(description = "业主姓名，不用于确认身份") String ownerName) {
+        return "尚未接入门禁系统或经核验的办理规则，无法确认权限、办理费用和服务时间，请联系实际物业服务人员。";
     }
 
-    /**
-     * 查询门禁卡办理信息及办理流程
-     *
-     * @param ownerName 业主姓名
-     * @return 门禁卡办理指南文本
-     */
-    @Tool(description = "查询门禁卡办理信息。用于回答'门禁卡'、'门禁权限'、'如何开门'等问题")
-    public String getAccessCardInfo(
-            @ToolParam(description = "业主姓名") String ownerName) {
-        log.info("查询门禁卡信息 - ownerName: {}", ownerName);
-
-        try {
-            String result = communityClient.get("/system/owner/list");
-            JsonNode root = objectMapper.readTree(result);
-            JsonNode data = root.path("rows");
-
-            if (!data.isArray() || data.isEmpty()) {
-                return "未找到业主信息。";
-            }
-
-            for (JsonNode item : data) {
-                String itemName = item.path("ownerName").asText();
-                if (ownerName != null && !ownerName.isEmpty() && !itemName.contains(ownerName)) {
-                    continue;
-                }
-
-                return """
-                        【门禁卡办理信息】
-
-                        【办理方式】
-                        1. 携带业主身份证原件
-                        2. 前往物业服务中心办理
-                        3. 现场采集人脸信息（可选）
-
-                        【费用说明】
-                        - 首次办理：免费
-                        - 补办工本费：10元/张
-
-                        【使用方式】
-                        - 刷卡开门
-                        - 手机APP远程开门
-                        - 人脸识别（需开通）
-
-                        【服务时间】
-                        - 物业服务中心：工作日 8:30-17:30
-                        - 24小时服务热线：400-888-8888
-
-                        如需帮助，请拨打服务热线。
-                        """;
-            }
-
-            return "未找到该业主的信息。";
-
-        } catch (Exception e) {
-            log.error("查询门禁卡信息失败: {}", e.getMessage());
-            return """
-                    【门禁卡办理信息】
-
-                    【办理方式】
-                    1. 携带业主身份证原件
-                    2. 前往物业服务中心办理
-
-                    【费用说明】
-                    - 首次办理：免费
-                    - 补办工本费：10元/张
-
-                    【服务时间】
-                    工作日 8:30-17:30
-                    """;
-        }
-    }
-
-    /**
-     * 查询便民服务信息（维修、保洁、搬家、护理等）
-     *
-     * @param serviceType 服务类型：repair(维修), cleaning(保洁), moving(搬家), nursing(护理)
-     * @return 格式化后的便民服务信息文本
-     */
-    @Tool(description = "查询便民服务信息。用于回答'便民服务'、'便民'、'维修'、'家政'等问题")
-    public String getConvenientServices(
-            @ToolParam(description = "服务类型：repair(维修), cleaning(保洁), moving(搬家), nursing(护理)") String serviceType) {
-        log.info("查询便民服务 - serviceType: {}", serviceType);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("【便民服务信息】\n\n");
-
-        if (serviceType == null || serviceType.isEmpty() || "repair".equalsIgnoreCase(serviceType)) {
-            sb.append("【便民维修】\n");
-            sb.append("  - 水电维修：专业师傅，快速响应\n");
-            sb.append("  - 门窗维修：更换锁芯、五金配件\n");
-            sb.append("  - 家电维修：空调、冰箱、洗衣机\n");
-            sb.append("  预约电话：400-888-8888\n\n");
-        }
-
-        if (serviceType == null || serviceType.isEmpty() || "cleaning".equalsIgnoreCase(serviceType)) {
-            sb.append("【保洁服务】\n");
-            sb.append("  - 日常保洁：每小时50元\n");
-            sb.append("  - 深度清洁：每次200元起\n");
-            sb.append("  - 开荒保洁：每平方米3元\n\n");
-        }
-
-        if (serviceType == null || serviceType.isEmpty() || "moving".equalsIgnoreCase(serviceType)) {
-            sb.append("【搬家服务】\n");
-            sb.append("  - 居民搬家：200元/次起\n");
-            sb.append("  - 货物运输：面议\n");
-            sb.append("  合作商家：蚂蚁搬家\n\n");
-        }
-
-        if (serviceType == null || serviceType.isEmpty() || "nursing".equalsIgnoreCase(serviceType)) {
-            sb.append("【护理服务】\n");
-            sb.append("  - 老人护理：专业护工\n");
-            sb.append("  - 病人陪护：医院/居家\n");
-            sb.append("  - 母婴护理：月嫂、育儿嫂\n");
-            sb.append("  合作商家：爱心护理中心\n\n");
-        }
-
-        sb.append("【服务须知】\n");
-        sb.append("  - 以上服务需提前预约\n");
-        sb.append("  - 详细费用以实际为准\n");
-        sb.append("  - 服务热线：400-888-8888\n");
-
-        return sb.toString();
-    }
-
-    /**
-     * 获取默认社区信息（当接口不可用时降级返回）
-     */
-    private String getDefaultCommunityInfo() {
-        return """
-                【社区基本信息】
-
-                小区名称：合家云社区
-                竣工时间：2020年
-                总户数：1500户
-                占地面积：8.5万平方米
-                绿化率：35%
-                停车位：地下车库500个，地面车位200个
-
-                物业管理：合家云物业服务中心
-                服务电话：400-888-8888
-                物业地址：1号楼B1层
-                服务时间：24小时
-                """;
-    }
-
-    /**
-     * 获取默认周边配套信息（当接口不可用时降级返回）
-     */
-    private String getDefaultNearbyInfo() {
-        return """
-                【周边配套信息】
-
-                【交通配套】
-                - 地铁站：2号线XX路站，约800米
-                - 公交站：XX路XX路站，多条线路经过
-                - 自驾路线：小区出入口连接主干道，出行便利
-
-                【教育资源】
-                - 幼儿园：XX幼儿园（省级示范），约500米
-                - 小学：XX小学（市重点），约1公里
-                - 中学：XX中学，约2公里
-
-                【医疗资源】
-                - 社区医院：约500米
-                - 三甲医院：XX医院，约3公里
-                - 药店：小区便利店旁有2家
-
-                【商业配套】
-                - 大型超市：XX超市，约1公里
-                - 购物中心：XX广场，约2公里
-                - 银行：XX银行XX支行，约800米
-                - 菜市场：约600米
-
-                【休闲公园】
-                - XX公园：约1公里
-                - XX滨江步道：约2公里
-
-                如需了解更多信息，请告诉我。
-                """;
-    }
-
-    /**
-     * 将周边配套类型的英文标识转为中文显示
-     *
-     * @param type 英文类型标识
-     * @return 中文格式的类型标签
-     */
-    private String formatNearbyType(String type) {
-        if (type == null) return "";
-        return switch (type.toLowerCase()) {
-            case "traffic" -> "【交通】";
-            case "education" -> "【教育】";
-            case "medical" -> "【医疗】";
-            case "shopping" -> "【商业】";
-            case "park" -> "【公园】";
-            default -> "【配套】";
-        };
+    @Tool(description = "说明便民服务数据接入状态")
+    public String getConvenientServices(@ToolParam(description = "服务类型") String serviceType) {
+        return "尚未维护经核验的便民服务目录，不提供虚构商家、电话或价格。报修可通过业务页面提交。";
     }
 }

@@ -68,13 +68,13 @@ public class AppSuggestController extends BaseController {
     }
 
     /**
-     * 我的投诉/建议列表（按登录业主姓名+手机号联查隔离）
+     * 我的投诉/建议列表（按登录居民的稳定提交者标识隔离，新旧工单不做猜测性归属）
      */
     @GetMapping("/list")
     public PageResult list(HttpServletRequest request) {
         HjySuggest query = new HjySuggest();
-        query.setOwnerRealName((String) request.getAttribute(AppAuthFilter.ATTR_OWNER_NAME));
-        query.setOwnerPhoneNumber((String) request.getAttribute(AppAuthFilter.ATTR_OWNER_PHONE));
+        query.setCreateBy(AppAuthFilter.ownerOperator(request.getAttribute(AppAuthFilter.ATTR_OWNER_ID)));
+
 
         startPage();
         List<HjySuggest> list = suggestService.selectSuggestList(query);

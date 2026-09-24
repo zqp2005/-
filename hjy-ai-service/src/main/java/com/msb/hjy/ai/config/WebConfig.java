@@ -13,7 +13,17 @@ import org.springframework.web.filter.CorsFilter;
  * 支持所有来源、请求头和请求方法。
  */
 @Configuration
-public class WebConfig {
+public class WebConfig implements org.springframework.web.servlet.config.annotation.WebMvcConfigurer {
+
+    /** SSE 字符串分片必须使用 UTF-8，防止默认 Latin-1 转换器把中文写成问号。 */
+    @Override
+    public void extendMessageConverters(java.util.List<org.springframework.http.converter.HttpMessageConverter<?>> converters) {
+        for (org.springframework.http.converter.HttpMessageConverter<?> converter : converters) {
+            if (converter instanceof org.springframework.http.converter.StringHttpMessageConverter text) {
+                text.setDefaultCharset(java.nio.charset.StandardCharsets.UTF_8);
+            }
+        }
+    }
 
     /**
      * 创建 CORS 过滤器，允许跨域请求
