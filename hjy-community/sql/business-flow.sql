@@ -84,8 +84,13 @@ UPDATE sys_menu SET visible = '0' WHERE menu_id IN (2067, 2061);
 UPDATE sys_dict_data SET dict_label = '已处理' WHERE dict_type = 'hjy_complaint_state' AND dict_value = 'Replied';
 
 -- 8) 普通角色(common)收窄为只读：移除全部写操作按钮权限，仅保留 query/list/export
-DELETE rm FROM sys_role_menu rm JOIN sys_menu m ON rm.menu_id = m.menu_id
-WHERE rm.role_id = 2 AND m.menu_type = 'F' AND m.perms NOT REGEXP ':(query|list|export)$';
+-- 按 role_key 定位，避免不同环境的角色 ID 不一致导致权限未清理。
+DELETE rm FROM sys_role_menu rm
+JOIN sys_role r ON rm.role_id = r.role_id
+JOIN sys_menu m ON rm.menu_id = m.menu_id
+WHERE r.role_key = 'common'
+  AND m.menu_type = 'F'
+  AND m.perms NOT REGEXP ':(query|list|export)$';
 
 -- 2026-09-15 code-review修复配套：通知导出按钮权限（配合后端@PreAuthorize system:notice:export）
 INSERT INTO sys_menu (menu_id, menu_name, parent_id, order_num, path, component, is_frame, is_cache, menu_type, visible, status, perms, icon, create_by, create_time, remark)
