@@ -26,8 +26,22 @@ public class HjyRoomExcelDto implements Serializable {
     @Excel(name = "面积(㎡)")
     private String roomAcreage;
 
-    @Excel(name = "房屋状态", replace = {"已入住_has_stay", "未入住_none_stay"})
+    @Excel(name = "房屋状态")
     private String roomStatus;
+
+    /** 状态编码含下划线，不能使用 EasyPOI 的下划线分隔 replace 规则。 */
+    public String getRoomStatus() {
+        if (roomStatus == null) {
+            return null;
+        }
+        switch (roomStatus) {
+            case "has_stay": return "已入住";
+            case "none_stay": return "未入住";
+            case "none": return "未出售";
+            case "has_give": return "已交房";
+            default: return roomStatus;
+        }
+    }
 
     @Excel(name = "户型")
     private String roomHouseType;

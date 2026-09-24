@@ -171,6 +171,13 @@ mvn "-Dtest=OwnerAccountSecurityTest,ManagementAuthorizationTest,RepairStateFlow
 
 剩余事项：旧登录态撤销、AI 调用者授权/虚假欠费结果、Druid 匿名暴露、社区数据范围、真实身份核验、绑定与入住解耦、数据库约束/历史数据核验、房屋字典契约、状态并发与工单验收等仍待后续批次。**第 1A 批完成不代表全部审查问题已经修复。**
 
+### 2026-09-24：补交房间导出状态修复
+
+- 收录此前未提交的“未出售/已交房”导出需求，并修正 EasyPOI `replace` 对含下划线状态编码的拆分问题；在导出 DTO 显式转换四种中文状态，不改变数据库状态值。
+- 验证：JDK 8 执行 `mvn "-Dtest=RoomExcelExportTest" test`，2 项通过。测试直接检查内存中生成的 Excel 单元格，并验证未知/空状态保留，不访问数据库。
+- 原有 `hjy-community/sql/backup/` 备份及 `hjy-community/sql/data-repair-20260924.sql` 保留本地、不执行、不提交：含居民资料，且修复脚本混有推断性数据填充，未经脱敏和业务核验不能作为正式迁移发布。
+- 本次仅后端代码与文档补交，无数据库变更、无云端部署，dev 分支不变。
+
 ## 提交风格
 
 中文提交信息，以功能描述为主。
