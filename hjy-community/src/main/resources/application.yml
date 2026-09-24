@@ -4,6 +4,8 @@ hjy-community:
   name: hjy-community
   # ??
   version: 1.0.0
+  # 头像等用户上传文件目录，可在部署环境用 HJY_UPLOAD_PATH 覆盖
+  upload-path: ${HJY_UPLOAD_PATH:./uploads}
 
 # ??????
 server:

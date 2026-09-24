@@ -15,6 +15,8 @@ import com.msb.hjycommunity.common.core.page.PageResult;
 import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.ChainedMap;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
+import com.msb.hjycommunity.common.utils.PasswordEncoderUtil;
+import com.msb.hjycommunity.system.domain.LoginUser;
 import com.msb.hjycommunity.system.domain.SysRole;
 import com.msb.hjycommunity.system.domain.SysUser;
 import com.msb.hjycommunity.system.service.SysPostService;
@@ -22,13 +24,21 @@ import com.msb.hjycommunity.system.service.SysRoleService;
 import com.msb.hjycommunity.system.service.SysUserService;
 import com.msb.hjycommunity.framework.security.service.PermsExpressionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 /**
  * @author spikeCong
@@ -65,6 +75,114 @@ public class SysUserController extends BaseController {
 
     @Autowired
     private SysPostService postService;
+
+    @Autowired
+    private com.msb.hjycommunity.system.service.TokenService tokenService;
+
+    @Value("${hjy-community.upload-path:./uploads}")
+    private String uploadPath;
+
+    /**
+     * 获取当前登录用户的个人中心资料。
+     */
+    @GetMapping("/profile")
+    public ChainedMap profile() {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser user = userService.selectUserById(loginUser.getUser().getUserId());
+        return ChainedMap.create()
+                .set("code", 200)
+                .set("msg", "操作成功")
+                .set("data", user)
+                .set("roleGroup", userService.selectUserRoleGroup(user.getUserName()))
+                .set("postGroup", userService.selectUserPostGroup(user.getUserName()));
+    }
+
+    /**
+     * 修改当前用户可维护的基本资料。
+     */
+    @PutMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
+    public BaseResponse updateProfile(@RequestBody SysUser profile) {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser update = new SysUser();
+        update.setUserId(loginUser.getUser().getUserId());
+        update.setUserName(loginUser.getUser().getUserName());
+        update.setNickName(profile.getNickName());
+        update.setPhonenumber(profile.getPhonenumber());
+        update.setEmail(profile.getEmail());
+        update.setSex(profile.getSex());
+        update.setUpdateBy(loginUser.getUsername());
+
+        if (UserConstants.NOT_UNIQUE.equals(userService.checkPhoneUnique(update))) {
+            return BaseResponse.fail("修改用户失败，手机号码已存在");
+        }
+        if (UserConstants.NOT_UNIQUE.equals(userService.checkEmailUnique(update))) {
+            return BaseResponse.fail("修改用户失败，邮箱账号已存在");
+        }
+        if (userService.updateUserProfile(update) <= 0) {
+            return BaseResponse.fail("修改个人资料失败");
+        }
+        refreshCurrentSession(loginUser);
+        return BaseResponse.success("修改成功");
+    }
+
+    /**
+     * 当前用户校验旧密码后修改自己的密码。
+     */
+    @PutMapping("/profile/updatePwd")
+    @PreAuthorize("isAuthenticated()")
+    public BaseResponse updateProfilePassword(@RequestParam String oldPassword,
+                                              @RequestParam String newPassword) {
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        SysUser current = userService.selectUserById(loginUser.getUser().getUserId());
+        if (current == null || !PasswordEncoderUtil.matches(oldPassword, current.getPassword())) {
+            return BaseResponse.fail("修改密码失败，旧密码错误");
+        }
+        if (PasswordEncoderUtil.matches(newPassword, current.getPassword())) {
+            return BaseResponse.fail("新密码不能与旧密码相同");
+        }
+        if (userService.resetUserPwd(current.getUserName(), SecurityUtils.encryptPassword(newPassword)) <= 0) {
+            return BaseResponse.fail("修改密码失败");
+        }
+        refreshCurrentSession(loginUser);
+        return BaseResponse.success("修改成功");
+    }
+
+    /**
+     * 上传并替换当前用户头像。
+     */
+    @PostMapping("/profile/avatar")
+    @PreAuthorize("isAuthenticated()")
+    public ChainedMap updateAvatar(@RequestParam("avatarfile") MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty() || file.getContentType() == null
+                || !file.getContentType().toLowerCase().startsWith("image/")) {
+            return ChainedMap.create().set("code", 500).set("msg", "请上传有效的图片文件");
+        }
+        String originalName = file.getOriginalFilename();
+        String extension = originalName != null && originalName.lastIndexOf('.') >= 0
+                ? originalName.substring(originalName.lastIndexOf('.')).toLowerCase() : ".png";
+        if (!java.util.Arrays.asList(".jpg", ".jpeg", ".png", ".gif").contains(extension)) {
+            return ChainedMap.create().set("code", 500).set("msg", "头像仅支持 JPG、PNG 或 GIF 格式");
+        }
+        Path avatarDir = Paths.get(uploadPath).toAbsolutePath().normalize().resolve("avatar");
+        Files.createDirectories(avatarDir);
+        String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
+        Files.copy(file.getInputStream(), avatarDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+        String avatarUrl = "/profile/avatar/" + fileName;
+
+        LoginUser loginUser = SecurityUtils.getLoginUser();
+        if (!userService.updateUserAvatar(loginUser.getUsername(), avatarUrl)) {
+            Files.deleteIfExists(avatarDir.resolve(fileName));
+            return ChainedMap.create().set("code", 500).set("msg", "修改头像失败");
+        }
+        refreshCurrentSession(loginUser);
+        return ChainedMap.create().set("code", 200).set("msg", "修改成功").set("imgUrl", avatarUrl);
+    }
+
+    private void refreshCurrentSession(LoginUser loginUser) {
+        loginUser.setUser(userService.selectUserById(loginUser.getUser().getUserId()));
+        tokenService.setLoginUser(loginUser);
+    }
 
     /**
      * 获取用户分页列表(条件查询)

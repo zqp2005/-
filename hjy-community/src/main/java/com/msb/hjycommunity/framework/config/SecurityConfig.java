@@ -83,6 +83,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/login","/captchaImage").anonymous()
                 // 业主端（小程序）接口：放行 Spring Security，认证由 AppAuthFilter 自管（独立业主令牌）
                 .antMatchers("/app/**").permitAll()
+                // 头像由 img 标签直接加载，浏览器不会为静态资源附加 JWT。
+                .antMatchers("/profile/**").permitAll()
                 // Swagger 相关资源放行
                 .antMatchers("/swagger-ui.html").anonymous()
                 .antMatchers("/swagger-resources/**").anonymous()

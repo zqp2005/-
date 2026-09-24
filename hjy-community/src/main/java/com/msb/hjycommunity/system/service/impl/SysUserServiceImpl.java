@@ -13,6 +13,8 @@ import com.msb.hjycommunity.system.mapper.SysUserMapper;
 
 import com.msb.hjycommunity.system.mapper.SysUserPostMapper;
 import com.msb.hjycommunity.system.mapper.SysUserRoleMapper;
+import com.msb.hjycommunity.system.mapper.SysRoleMapper;
+import com.msb.hjycommunity.system.mapper.SysPostMapper;
 import com.msb.hjycommunity.system.service.SysUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,7 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @author spikeCong
@@ -44,6 +47,12 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Resource
     private SysUserRoleMapper userRoleMapper;
+
+    @Resource
+    private SysRoleMapper roleMapper;
+
+    @Resource
+    private SysPostMapper postMapper;
 
 
     /**
@@ -212,8 +221,9 @@ public class SysUserServiceImpl implements SysUserService {
      */
     @Override
     public String selectUserRoleGroup(String userName) {
-
-        return null;
+        return roleMapper.selectRolesByUserName(userName).stream()
+                .map(com.msb.hjycommunity.system.domain.SysRole::getRoleName)
+                .collect(Collectors.joining(","));
     }
 
     /**
@@ -224,7 +234,9 @@ public class SysUserServiceImpl implements SysUserService {
      */
     @Override
     public String selectUserPostGroup(String userName) {
-        return null;
+        return postMapper.selectPostsByUserName(userName).stream()
+                .map(com.msb.hjycommunity.system.domain.SysPost::getPostName)
+                .collect(Collectors.joining(","));
     }
 
     /**

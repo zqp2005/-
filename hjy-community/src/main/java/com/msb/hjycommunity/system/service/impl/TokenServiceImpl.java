@@ -170,6 +170,7 @@ public LoginUser getLoginUser(HttpServletRequest request) {
     @Override
     public void setLoginUser(LoginUser loginUser) {
         if(!Objects.isNull(loginUser) && !StringUtils.isEmpty(loginUser.getToken())){
+            loginUser.setCredentialFingerprint(fingerprint(loginUser.getUser()));
             refreshToken(loginUser);
         }
     }
