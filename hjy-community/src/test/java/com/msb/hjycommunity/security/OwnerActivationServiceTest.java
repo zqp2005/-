@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -23,18 +23,19 @@ class OwnerActivationServiceTest {
     void issueOnlyForUnactivatedProfileAndStoresExpiringDigest() {
         HjyOwner owner = owner();
         when(mapper.selectOwnerById(42L)).thenReturn(owner);
-        @SuppressWarnings("unchecked") ValueOperations<String, String> values = mock(ValueOperations.class);
-        when(redis.opsForValue()).thenReturn(values);
+        when(redis.execute(any(), anyList(), anyString(), anyString(), anyString())).thenReturn(1L);
         String code = service.issue(42L);
         assertEquals(16, code.length());
-        verify(values).get("owner:activation:42");
-        verify(values).set(eq("owner:activation:42"), argThat(value -> !value.equals(code) && value.length() == 64),
-                eq(15L), eq(TimeUnit.MINUTES));
-        verify(values).set(startsWith("owner:activation:code:"), eq("42"), eq(15L), eq(TimeUnit.MINUTES));
+        verify(redis).execute(any(), argThat(keys -> keys.size() == 3
+                && "owner:activation:42".equals(keys.get(0))
+                && keys.get(1).startsWith("owner:activation:code:")
+                && "owner:activation:lock:42".equals(keys.get(2))),
+                argThat((String value) -> !value.equals(code) && value.length() == 64), eq("42"),
+                eq("owner:activation:code:"));
 
         owner.setOwnerPassword("existing-hash");
         assertThrows(CustomException.class, () -> service.issue(42L));
-        verifyNoMoreInteractions(values);
+        verifyNoMoreInteractions(redis);
 
         owner.setOwnerPassword(null);
         owner.setOwnerStatus("Disable");
@@ -45,7 +46,7 @@ class OwnerActivationServiceTest {
     @Test
     void activationConsumesCodeOnceAndDoesNotOverwritePassword() {
         HjyOwner owner = owner();
-        when(redis.execute(any(), anyList(), anyString())).thenReturn(1L, 0L);
+        when(redis.execute(any(), anyList(), anyString())).thenReturn(1L, 1L, 0L);
         when(mapper.activateOwner(42L, "hash")).thenReturn(1);
         assertTrue(service.activate(owner, "code", "hash"));
         assertFalse(service.activate(owner, "code", "hash"));
@@ -54,6 +55,16 @@ class OwnerActivationServiceTest {
         owner.setOwnerPassword("existing-hash");
         assertFalse(service.activate(owner, "code", "hash"));
         verifyNoMoreInteractions(mapper);
+    }
+
+    @Test
+    void failedDatabaseWriteReleasesReservationWithoutConsumingCode() {
+        HjyOwner owner = owner();
+        when(redis.execute(any(), anyList(), anyString())).thenReturn(1L);
+        when(mapper.activateOwner(42L, "hash")).thenThrow(new IllegalStateException("database unavailable"));
+        assertThrows(IllegalStateException.class, () -> service.activate(owner, "code", "hash"));
+        verify(redis).execute(any(), eq(Collections.singletonList("owner:activation:lock:42")), anyString());
+        verify(redis, never()).execute(any(), argThat(keys -> keys.size() == 3), anyString());
     }
 
     @Test

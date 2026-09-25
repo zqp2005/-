@@ -6,11 +6,13 @@ import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyOwner;
 import com.msb.hjycommunity.property.mapper.HjyOwnerMapper;
 import com.msb.hjycommunity.property.service.HjyOwnerService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 /**
@@ -42,21 +44,31 @@ public class HjyOwnerServiceImpl implements HjyOwnerService {
     @Transactional
     public int insertOwner(HjyOwner owner) {
         validateOwnerContact(owner);
+        assertPhoneAvailable(owner);
         if (owner.getOwnerStatus() == null || owner.getOwnerStatus().trim().isEmpty()) {
             owner.setOwnerStatus("Enable");
         }
         // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
         owner.setOwnerId(IdWorker.getId());
         owner.setCreateBy(SecurityUtils.getUserName());
-        return ownerMapper.insertOwner(owner);
+        try {
+            return ownerMapper.insertOwner(owner);
+        } catch (DuplicateKeyException e) {
+            throw phoneConflict(e);
+        }
     }
 
     @Override
     @Transactional
     public int updateOwner(HjyOwner owner) {
         validateOwnerContact(owner);
+        assertPhoneAvailable(owner);
         owner.setUpdateBy(SecurityUtils.getUserName());
-        return ownerMapper.updateOwner(owner);
+        try {
+            return ownerMapper.updateOwner(owner);
+        } catch (DuplicateKeyException e) {
+            throw phoneConflict(e);
+        }
     }
 
     @Override
@@ -83,7 +95,28 @@ public class HjyOwnerServiceImpl implements HjyOwnerService {
 
     @Override
     public HjyOwner selectOwnerByPhone(String ownerPhoneNumber) {
-        return ownerMapper.selectOwnerByPhone(ownerPhoneNumber);
+        List<HjyOwner> matches = ownerMapper.selectOwnersByPhone(ownerPhoneNumber);
+        if (matches == null || matches.isEmpty()) return null;
+        if (matches.size() > 1) {
+            throw new CustomException(409, "该手机号关联多个居民档案，请联系物业核对");
+        }
+        return matches.get(0);
+    }
+
+    private void assertPhoneAvailable(HjyOwner owner) {
+        String phone = owner.getOwnerPhoneNumber();
+        if (phone == null || phone.trim().isEmpty()) return;
+        List<HjyOwner> matches = ownerMapper.selectOwnersByPhone(phone);
+        if (matches != null && matches.stream().anyMatch(match -> !Objects.equals(match.getOwnerId(), owner.getOwnerId()))) {
+            throw new CustomException(409, "该手机号已有居民档案，请先核对原档案");
+        }
+    }
+
+    private RuntimeException phoneConflict(DuplicateKeyException e) {
+        if (e.getMessage() != null && e.getMessage().contains("uk_hjy_owner_phone")) {
+            return new CustomException(409, "该手机号已有居民档案，请先核对原档案");
+        }
+        return e;
     }
 
     /** 手机号/身份证号非空时校验格式，不符抛业务异常 */

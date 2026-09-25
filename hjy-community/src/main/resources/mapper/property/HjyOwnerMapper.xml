@@ -69,7 +69,7 @@
         WHERE owner_id = #{ownerId}
     </select>
 
-    <select id="selectOwnerByPhone" parameterType="String" resultMap="HjyOwnerResult">
+    <select id="selectOwnersByPhone" parameterType="String" resultMap="HjyOwnerResult">
         <include refid="selectOwnerVo"/>
         WHERE owner_phone_number = #{ownerPhoneNumber}
     </select>

@@ -11,17 +11,30 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class OwnerActivationService {
-    private static final int EXPIRE_MINUTES = 15;
     private static final String KEY_PREFIX = "owner:activation:";
     private static final String CODE_KEY_PREFIX = "owner:activation:code:";
-    private static final DefaultRedisScript<Long> CONSUME = new DefaultRedisScript<>(
-            "if redis.call('get', KEYS[1]) == ARGV[1] then "
-                    + "redis.call('del', KEYS[1], KEYS[2]); return 1 else return 0 end",
+    private static final DefaultRedisScript<Long> ISSUE = new DefaultRedisScript<>(
+            "if redis.call('exists', KEYS[3]) == 1 then return 0 end "
+                    + "local previous = redis.call('get', KEYS[1]); "
+                    + "if previous then redis.call('del', ARGV[3] .. previous) end "
+                    + "redis.call('set', KEYS[1], ARGV[1], 'EX', 900); "
+                    + "redis.call('set', KEYS[2], ARGV[2], 'EX', 900); return 1",
+            Long.class);
+    private static final DefaultRedisScript<Long> RESERVE = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) ~= ARGV[1] then return 0 end "
+                    + "if redis.call('set', KEYS[2], ARGV[1], 'NX', 'EX', 60) then return 1 end return 0",
+            Long.class);
+    private static final DefaultRedisScript<Long> COMPLETE = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then redis.call('del', KEYS[1], KEYS[2]) end "
+                    + "if redis.call('get', KEYS[3]) == ARGV[1] then redis.call('del', KEYS[3]) end return 1",
+            Long.class);
+    private static final DefaultRedisScript<Long> RELEASE = new DefaultRedisScript<>(
+            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) end return 0",
             Long.class);
 
     private final HjyOwnerMapper ownerMapper;
@@ -42,11 +55,13 @@ public class OwnerActivationService {
         byte[] bytes = new byte[12];
         random.nextBytes(bytes);
         String code = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        String previousDigest = redis.opsForValue().get(key(ownerId));
-        if (previousDigest != null) redis.delete(codeKey(previousDigest));
         String codeDigest = digest(code);
-        redis.opsForValue().set(key(ownerId), codeDigest, EXPIRE_MINUTES, TimeUnit.MINUTES);
-        redis.opsForValue().set(codeKey(codeDigest), String.valueOf(ownerId), EXPIRE_MINUTES, TimeUnit.MINUTES);
+        Long issued = redis.execute(ISSUE,
+                Arrays.asList(key(ownerId), codeKey(codeDigest), lockKey(ownerId)),
+                codeDigest, String.valueOf(ownerId), CODE_KEY_PREFIX);
+        if (!Long.valueOf(1).equals(issued)) {
+            throw new CustomException(409, "该居民正在激活，请稍后再生成激活码");
+        }
         return code;
     }
 
@@ -64,10 +79,21 @@ public class OwnerActivationService {
         if (owner == null || !"Enable".equals(owner.getOwnerStatus()) || hasPassword(owner)
                 || code == null || code.trim().isEmpty()) return false;
         String codeDigest = digest(code.trim());
-        Long consumed = redis.execute(CONSUME,
-                java.util.Arrays.asList(key(owner.getOwnerId()), codeKey(codeDigest)), codeDigest);
-        if (!Long.valueOf(1).equals(consumed)) return false;
-        return ownerMapper.activateOwner(owner.getOwnerId(), passwordHash) == 1;
+        Long reserved = redis.execute(RESERVE,
+                Arrays.asList(key(owner.getOwnerId()), lockKey(owner.getOwnerId())), codeDigest);
+        if (!Long.valueOf(1).equals(reserved)) return false;
+        boolean activated = false;
+        try {
+            activated = ownerMapper.activateOwner(owner.getOwnerId(), passwordHash) == 1;
+            if (activated) {
+                redis.execute(COMPLETE,
+                        Arrays.asList(key(owner.getOwnerId()), codeKey(codeDigest), lockKey(owner.getOwnerId())),
+                        codeDigest);
+            }
+            return activated;
+        } finally {
+            if (!activated) redis.execute(RELEASE, Collections.singletonList(lockKey(owner.getOwnerId())), codeDigest);
+        }
     }
 
     private boolean hasPassword(HjyOwner owner) {
@@ -77,6 +103,8 @@ public class OwnerActivationService {
     private String key(Long ownerId) { return KEY_PREFIX + ownerId; }
 
     private String codeKey(String codeDigest) { return CODE_KEY_PREFIX + codeDigest; }
+
+    private String lockKey(Long ownerId) { return KEY_PREFIX + "lock:" + ownerId; }
 
     private String digest(String value) {
         try {
