@@ -42,6 +42,9 @@ public class HjyOwnerServiceImpl implements HjyOwnerService {
     @Transactional
     public int insertOwner(HjyOwner owner) {
         validateOwnerContact(owner);
+        if (owner.getOwnerStatus() == null || owner.getOwnerStatus().trim().isEmpty()) {
+            owner.setOwnerStatus("Enable");
+        }
         // 手写XML insert不走MyBatis-Plus主键策略，显式生成雪花ID
         owner.setOwnerId(IdWorker.getId());
         owner.setCreateBy(SecurityUtils.getUserName());
