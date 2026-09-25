@@ -90,7 +90,7 @@ MySQL 8，本地 `127.0.0.1:3306`，账号 root/123456（真实值在 `hjy-commu
 - **统一响应**：`R<T>` 封装所有 API 返回，包含 code/message/data。`BaseResponse` 是其旧版替代方案。
 - **BaseEntity**：领域实体基类，通过 MyBatis-Plus 元对象处理器自动填充 `createTime`、`updateTime`、`createBy`、`updateBy`。
 - **安全认证（管理端）**：`SecurityConfig` 继承 `WebSecurityConfigurerAdapter`。`JwtAuthenticationTokenFilter` 对每个请求校验 JWT。`@PreAuthorize` 注解用于方法级权限控制。`/captcha`、`/login` 无需认证即可访问；`/aiLogin` 与 `/druid/**` 已禁用。
-- **业主端接口（小程序）**：`web.controller.app` 包提供 `/app/**` 独立接口层（注册/登录、提交报修投诉、查自己的单）。Spring Security 对 `/app/**` `permitAll`，认证由 `AppAuthFilter` 自管：签发/校验**独立于管理端的业主 JWT**（Redis key `owner_tokens:{uuid}`，与管理端 `login_tokens` 完全隔离），注册白名单（register/login）、手机号/身份证正则校验，禁止凭自填资料激活存量空密码业主，暂需联系物业核验；每次请求复核账号状态、凭据指纹和有效期。
+- **业主端接口（小程序）**：`web.controller.app` 包提供 `/app/**` 独立接口层（注册/登录、提交报修投诉、查自己的单）。Spring Security 对 `/app/**` `permitAll`，认证由 `AppAuthFilter` 自管：签发/校验**独立于管理端的业主 JWT**（Redis key `owner_tokens:{uuid}`，与管理端 `login_tokens` 完全隔离），注册白名单（register/login）、手机号/身份证正则校验；存量空密码业主须由物业线下核验并发 15 分钟一次性激活码，不能凭自填资料认领；每次请求复核账号状态、凭据指纹和有效期。
 - **MyBatis-Plus + PageHelper**：增删改查通过 MyBatis-Plus（`BaseMapper`），分页通过 PageHelper（`PageHelper.startPage()`），复杂查询在 `resources/mapper/**/*Mapper.xml` 中（按 monitor/property/system 模块组织）。
 - **DTO/VO 模式**：`domain/dto` 存放请求体，`domain/vo` 存放响应体。使用 Orika（`MapperFacade`）进行对象属性拷贝。
 - **业务状态机与动作接口**：报修（`RepairState`）与投诉（`SuggestState`）的状态流转只能通过动作端点驱动（报修 `assign/receive/complete/cancel/reject`，投诉 `accept/reply/close`，均为 `PUT .../动作/{id}`），非法转移抛 `CustomException` 并自动记录时间戳/操作人；普通 update 在 Service 层置空流转字段实现编辑降级。房屋绑定走审核流（Auditing→Binding/Rejected，审核/解绑/撤回在 `hjy_owner_room_record` 留痕，不再联动房间入住状态）。社区/楼栋/单元/房间/业主五级删除有级联校验，有下级数据整批拒绝。

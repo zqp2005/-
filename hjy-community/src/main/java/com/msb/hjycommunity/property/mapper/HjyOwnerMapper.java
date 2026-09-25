@@ -11,6 +11,10 @@ import java.util.List;
  */
 public interface HjyOwnerMapper extends BaseMapper<HjyOwner> {
 
+    @org.apache.ibatis.annotations.Update("UPDATE hjy_owner SET owner_password = #{passwordHash}, owner_status = 'Enable', update_time = NOW() WHERE owner_id = #{ownerId} AND (owner_password IS NULL OR TRIM(owner_password) = '')")
+    int activateOwner(@org.apache.ibatis.annotations.Param("ownerId") Long ownerId,
+                      @org.apache.ibatis.annotations.Param("passwordHash") String passwordHash);
+
     /**
      * 查询业主列表
      */

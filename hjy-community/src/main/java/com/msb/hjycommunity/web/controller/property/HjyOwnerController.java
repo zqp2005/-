@@ -14,6 +14,7 @@ import com.msb.hjycommunity.common.enums.BusinessType;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.property.domain.HjyOwner;
 import com.msb.hjycommunity.property.service.HjyOwnerService;
+import com.msb.hjycommunity.property.service.OwnerActivationService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +30,17 @@ public class HjyOwnerController extends BaseController {
 
     @Resource
     private HjyOwnerService ownerService;
+
+    @Resource
+    private OwnerActivationService ownerActivationService;
+
+    /** 物业线下核验身份后生成一次性激活码，不通过公开注册直接认领档案。 */
+    @PostMapping("/{ownerId}/activation-code")
+    @Log(title = "居民账号激活", businessType = BusinessType.OTHER)
+    @PreAuthorize("@pe.hasPerms('system:owner:edit')")
+    public BaseResponse issueActivationCode(@PathVariable Long ownerId) {
+        return BaseResponse.success(ownerActivationService.issue(ownerId));
+    }
 
     /**
      * 导出业主信息数据（Excel流下载）

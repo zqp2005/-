@@ -8,6 +8,7 @@ import com.msb.hjycommunity.property.domain.HjyOwner;
 import com.msb.hjycommunity.property.domain.dto.AppLoginRequest;
 import com.msb.hjycommunity.property.domain.dto.AppRegisterRequest;
 import com.msb.hjycommunity.property.service.HjyOwnerService;
+import com.msb.hjycommunity.property.service.OwnerActivationService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,6 +43,9 @@ public class AppOwnerController extends BaseController {
     private HjyOwnerService ownerService;
 
     @Resource
+    private OwnerActivationService ownerActivationService;
+
+    @Resource
     private AppOwnerTokenService appOwnerTokenService;
 
     /**
@@ -72,9 +76,21 @@ public class AppOwnerController extends BaseController {
         }
 
         if (exist != null) {
-            return BaseResponse.fail("该手机号已有居民档案，暂不支持自助激活，请联系物业核验身份");
+            if (trimToNull(body.getActivationCode()) == null) {
+                return BaseResponse.fail("该手机号已有居民档案，请联系物业核验并获取激活码");
+            }
+            if (!realName.equals(trimToNull(exist.getOwnerRealName()))) {
+                return BaseResponse.fail("档案信息或激活码不正确，请联系物业核验");
+            }
+            boolean activated = ownerActivationService.activate(exist, body.getActivationCode(),
+                    SecurityUtils.encryptPassword(password));
+            return activated ? BaseResponse.success(buildOwnerData(exist.getOwnerId(), exist.getOwnerRealName()))
+                    : BaseResponse.fail("激活码错误或已过期，请联系物业重新获取");
         }
 
+        if (trimToNull(body.getActivationCode()) != null) {
+            return BaseResponse.fail("未找到待激活档案，请核对手机号或联系物业");
+        }
         String encrypted = SecurityUtils.encryptPassword(password);
         HjyOwner owner = new HjyOwner();
         owner.setOwnerPhoneNumber(phone);

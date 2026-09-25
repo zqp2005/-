@@ -203,6 +203,10 @@ public class HjyOwner extends BaseEntity {
         return ownerPassword;
     }
 
+    public boolean isAppLoginEnabled() {
+        return ownerPassword != null && !ownerPassword.trim().isEmpty();
+    }
+
     public void setOwnerPassword(String ownerPassword) {
         this.ownerPassword = ownerPassword;
     }

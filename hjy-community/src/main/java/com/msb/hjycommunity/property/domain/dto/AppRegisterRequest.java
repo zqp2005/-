@@ -30,6 +30,12 @@ public class AppRegisterRequest implements Serializable {
     /** 年龄（选填） */
     private Integer ownerAge;
 
+    /** 后台已建档居民使用的一次性激活码 */
+    private String activationCode;
+
+    public String getActivationCode() { return activationCode; }
+    public void setActivationCode(String activationCode) { this.activationCode = activationCode; }
+
     public String getPhone() {
         return phone;
     }

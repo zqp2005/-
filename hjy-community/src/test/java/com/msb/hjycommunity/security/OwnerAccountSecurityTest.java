@@ -7,6 +7,7 @@ import com.msb.hjycommunity.property.domain.HjyOwner;
 import com.msb.hjycommunity.property.domain.dto.AppLoginRequest;
 import com.msb.hjycommunity.property.domain.dto.AppRegisterRequest;
 import com.msb.hjycommunity.property.service.HjyOwnerService;
+import com.msb.hjycommunity.property.service.OwnerActivationService;
 import com.msb.hjycommunity.web.controller.app.AppOwnerController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,15 +21,18 @@ import static org.mockito.Mockito.*;
 class OwnerAccountSecurityTest {
     private HjyOwnerService owners;
     private AppOwnerTokenService tokens;
+    private OwnerActivationService activation;
     private AppOwnerController controller;
 
     @BeforeEach
     void setUp() {
         owners = mock(HjyOwnerService.class);
         tokens = mock(AppOwnerTokenService.class);
+        activation = mock(OwnerActivationService.class);
         controller = new AppOwnerController();
         ReflectionTestUtils.setField(controller, "ownerService", owners);
         ReflectionTestUtils.setField(controller, "appOwnerTokenService", tokens);
+        ReflectionTestUtils.setField(controller, "ownerActivationService", activation);
     }
 
     @Test
@@ -65,6 +69,37 @@ class OwnerAccountSecurityTest {
     }
 
     @Test
+    void activationRequiresMatchingExistingProfileAndCode() {
+        HjyOwner owner = new HjyOwner();
+        owner.setOwnerId(42L);
+        owner.setOwnerRealName("测试居民");
+        when(owners.selectOwnerByPhone("13800000000")).thenReturn(owner);
+        AppRegisterRequest request = registration();
+        request.setActivationCode("one-time-code");
+        when(activation.activate(eq(owner), eq("one-time-code"), anyString())).thenReturn(true);
+        assertTrue(controller.register(request).isSuccess());
+        verify(activation).activate(eq(owner), eq("one-time-code"), argThat(hash ->
+                new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().matches("sample-pass", hash)));
+        verify(owners, never()).insertOwner(any());
+
+        when(activation.activate(eq(owner), eq("one-time-code"), anyString())).thenReturn(false);
+        assertFalse(controller.register(request).isSuccess());
+
+        request.setRealName("其他人");
+        assertFalse(controller.register(request).isSuccess());
+        verify(activation, times(2)).activate(eq(owner), eq("one-time-code"), anyString());
+    }
+
+    @Test
+    void activationCodeCannotCreateAnotherProfile() {
+        AppRegisterRequest request = registration();
+        request.setActivationCode("one-time-code");
+        assertFalse(controller.register(request).isSuccess());
+        verify(owners, never()).insertOwner(any());
+        verifyNoInteractions(activation);
+    }
+
+    @Test
     void disabledOrUnknownStatusCannotLogin() {
         for (String status : new String[]{"Disable", null, "unexpected"}) {
             HjyOwner owner = loginOwner(status);
@@ -90,6 +125,7 @@ class OwnerAccountSecurityTest {
         String json = mapper.writeValueAsString(owner);
         assertFalse(json.contains("ownerPassword"));
         assertFalse(json.contains(owner.getOwnerPassword()));
+        assertTrue(json.contains("\"appLoginEnabled\":true"));
         HjyOwner input = mapper.readValue("{\"ownerPassword\":\"injected\",\"ownerRealName\":\"test\"}", HjyOwner.class);
         assertNull(input.getOwnerPassword());
         assertEquals("test", input.getOwnerRealName());
