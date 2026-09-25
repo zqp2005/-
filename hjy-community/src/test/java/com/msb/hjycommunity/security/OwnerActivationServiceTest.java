@@ -27,8 +27,10 @@ class OwnerActivationServiceTest {
         when(redis.opsForValue()).thenReturn(values);
         String code = service.issue(42L);
         assertEquals(16, code.length());
+        verify(values).get("owner:activation:42");
         verify(values).set(eq("owner:activation:42"), argThat(value -> !value.equals(code) && value.length() == 64),
                 eq(15L), eq(TimeUnit.MINUTES));
+        verify(values).set(startsWith("owner:activation:code:"), eq("42"), eq(15L), eq(TimeUnit.MINUTES));
 
         owner.setOwnerPassword("existing-hash");
         assertThrows(CustomException.class, () -> service.issue(42L));
@@ -52,6 +54,22 @@ class OwnerActivationServiceTest {
         owner.setOwnerPassword("existing-hash");
         assertFalse(service.activate(owner, "code", "hash"));
         verifyNoMoreInteractions(mapper);
+    }
+
+    @Test
+    void previewNeedsMatchingActiveCodeAndPendingOwner() {
+        HjyOwner owner = owner();
+        @SuppressWarnings("unchecked") ValueOperations<String, String> values = mock(ValueOperations.class);
+        when(redis.opsForValue()).thenReturn(values);
+        when(mapper.selectOwnerById(42L)).thenReturn(owner);
+        when(values.get(startsWith("owner:activation:code:"))).thenReturn("42");
+        String code = "abcdefghijklmnop";
+        String digest = "f39dac6cbaba535e2c207cd0cd8f154974223c848f727f98b3564cea569b41cf";
+        when(values.get("owner:activation:42")).thenReturn(digest);
+        assertEquals(owner, service.findPendingOwner(code));
+        owner.setOwnerPassword("already-open");
+        assertNull(service.findPendingOwner(code));
+        assertNull(service.findPendingOwner("invalid"));
     }
 
     private HjyOwner owner() {

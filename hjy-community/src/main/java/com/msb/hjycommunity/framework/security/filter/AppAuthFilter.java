@@ -46,7 +46,7 @@ public class AppAuthFilter extends OncePerRequestFilter {
     private static final String APP_PREFIX = "/app/";
 
     /** 白名单：注册/登录不需要令牌 */
-    private static final String[] WHITE_LIST = {"/app/register", "/app/login"};
+    private static final String[] WHITE_LIST = {"/app/register", "/app/login", "/app/activation/preview"};
 
     /** 占位操作人（写入 create_by/update_by） */
     private static final String APP_OPERATOR = "app";

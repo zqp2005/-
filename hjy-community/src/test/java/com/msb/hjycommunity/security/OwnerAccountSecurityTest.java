@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.framework.security.service.AppOwnerTokenService;
 import com.msb.hjycommunity.property.domain.HjyOwner;
+import com.msb.hjycommunity.property.domain.dto.AppActivationRequest;
 import com.msb.hjycommunity.property.domain.dto.AppLoginRequest;
 import com.msb.hjycommunity.property.domain.dto.AppRegisterRequest;
 import com.msb.hjycommunity.property.service.HjyOwnerService;
@@ -96,7 +97,41 @@ class OwnerAccountSecurityTest {
         request.setActivationCode("one-time-code");
         assertFalse(controller.register(request).isSuccess());
         verify(owners, never()).insertOwner(any());
-        verifyNoInteractions(activation);
+        verify(activation, never()).activate(any(), anyString(), anyString());
+    }
+
+    @Test
+    void codeOnlyActivationUsesServerProfileAndIgnoresClientFields() {
+        HjyOwner owner = new HjyOwner();
+        owner.setOwnerId(42L);
+        owner.setOwnerRealName("测试居民");
+        owner.setOwnerPhoneNumber("13800000000");
+        AppRegisterRequest request = new AppRegisterRequest();
+        request.setActivationCode("one-time-code");
+        request.setPassword("sample-pass");
+        when(activation.findPendingOwner("one-time-code")).thenReturn(owner);
+        when(activation.activate(eq(owner), eq("one-time-code"), anyString())).thenReturn(true);
+        assertTrue(controller.register(request).isSuccess());
+        verify(owners, never()).insertOwner(any());
+        verify(owners, never()).updateOwner(any());
+    }
+
+    @Test
+    void activationPreviewOnlyShowsNameAndMaskedPhone() {
+        HjyOwner owner = new HjyOwner();
+        owner.setOwnerRealName("测试居民");
+        owner.setOwnerPhoneNumber("13800000000");
+        owner.setOwnerIdCard("123456789012345678");
+        AppActivationRequest request = new AppActivationRequest();
+        request.setActivationCode("one-time-code");
+        when(activation.findPendingOwner("one-time-code")).thenReturn(owner);
+        String response = new ObjectMapper().valueToTree(controller.previewActivation(request).getData()).toString();
+        assertTrue(response.contains("测试居民"));
+        assertTrue(response.contains("138****0000"));
+        assertFalse(response.contains("13800000000"));
+        assertFalse(response.contains("123456789012345678"));
+        when(activation.findPendingOwner("one-time-code")).thenReturn(null);
+        assertFalse(controller.previewActivation(request).isSuccess());
     }
 
     @Test

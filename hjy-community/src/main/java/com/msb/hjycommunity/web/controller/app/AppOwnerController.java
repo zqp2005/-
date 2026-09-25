@@ -5,6 +5,7 @@ import com.msb.hjycommunity.common.core.domain.BaseResponse;
 import com.msb.hjycommunity.common.utils.SecurityUtils;
 import com.msb.hjycommunity.framework.security.service.AppOwnerTokenService;
 import com.msb.hjycommunity.property.domain.HjyOwner;
+import com.msb.hjycommunity.property.domain.dto.AppActivationRequest;
 import com.msb.hjycommunity.property.domain.dto.AppLoginRequest;
 import com.msb.hjycommunity.property.domain.dto.AppRegisterRequest;
 import com.msb.hjycommunity.property.service.HjyOwnerService;
@@ -48,18 +49,38 @@ public class AppOwnerController extends BaseController {
     @Resource
     private AppOwnerTokenService appOwnerTokenService;
 
+    @PostMapping("/activation/preview")
+    public BaseResponse previewActivation(@RequestBody AppActivationRequest body) {
+        HjyOwner owner = ownerActivationService.findPendingOwner(trimToNull(body.getActivationCode()));
+        if (owner == null) return BaseResponse.fail("激活码错误或已过期，请联系物业重新获取");
+        Map<String, Object> data = new HashMap<>();
+        data.put("realName", owner.getOwnerRealName());
+        String phone = owner.getOwnerPhoneNumber();
+        data.put("maskedPhone", phone == null || phone.length() != 11 ? "未填写" : phone.substring(0, 3) + "****" + phone.substring(7));
+        return BaseResponse.success(data);
+    }
+
     /**
      * 新手机号注册；可信激活流程上线前禁止认领存量业主档案。
      */
     @PostMapping("/register")
     public BaseResponse register(@RequestBody AppRegisterRequest body) {
-        String phone = trimToNull(body.getPhone());
-        if (phone == null || !PHONE_PATTERN.matcher(phone).matches()) {
-            return BaseResponse.fail("手机号格式不正确");
-        }
+        String activationCode = trimToNull(body.getActivationCode());
         String password = body.getPassword();
         if (password == null || password.trim().isEmpty() || password.trim().length() < 6) {
             return BaseResponse.fail("密码不能为空且长度不能少于6位");
+        }
+        if (activationCode != null && trimToNull(body.getPhone()) == null && trimToNull(body.getRealName()) == null) {
+            HjyOwner owner = ownerActivationService.findPendingOwner(activationCode);
+            if (owner == null) return BaseResponse.fail("激活码错误或已过期，请联系物业重新获取");
+            boolean activated = ownerActivationService.activate(owner, activationCode,
+                    SecurityUtils.encryptPassword(password));
+            return activated ? BaseResponse.success(buildOwnerData(owner.getOwnerId(), owner.getOwnerRealName()))
+                    : BaseResponse.fail("激活码错误或已过期，请联系物业重新获取");
+        }
+        String phone = trimToNull(body.getPhone());
+        if (phone == null || !PHONE_PATTERN.matcher(phone).matches()) {
+            return BaseResponse.fail("手机号格式不正确");
         }
         String realName = trimToNull(body.getRealName());
         if (realName == null) {

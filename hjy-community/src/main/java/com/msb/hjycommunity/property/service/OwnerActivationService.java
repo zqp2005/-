@@ -18,8 +18,10 @@ import java.util.concurrent.TimeUnit;
 public class OwnerActivationService {
     private static final int EXPIRE_MINUTES = 15;
     private static final String KEY_PREFIX = "owner:activation:";
+    private static final String CODE_KEY_PREFIX = "owner:activation:code:";
     private static final DefaultRedisScript<Long> CONSUME = new DefaultRedisScript<>(
-            "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+            "if redis.call('get', KEYS[1]) == ARGV[1] then "
+                    + "redis.call('del', KEYS[1], KEYS[2]); return 1 else return 0 end",
             Long.class);
 
     private final HjyOwnerMapper ownerMapper;
@@ -34,20 +36,36 @@ public class OwnerActivationService {
     public String issue(Long ownerId) {
         HjyOwner owner = ownerMapper.selectOwnerById(ownerId);
         if (owner == null || owner.getOwnerPhoneNumber() == null || owner.getOwnerPhoneNumber().trim().isEmpty()
-                || "Disable".equals(owner.getOwnerStatus()) || hasPassword(owner)) {
+                || !"Enable".equals(owner.getOwnerStatus()) || hasPassword(owner)) {
             throw new CustomException(500, "仅可为启用状态、有手机号且尚未开通小程序登录的居民发放激活码");
         }
         byte[] bytes = new byte[12];
         random.nextBytes(bytes);
         String code = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        redis.opsForValue().set(key(ownerId), digest(code), EXPIRE_MINUTES, TimeUnit.MINUTES);
+        String previousDigest = redis.opsForValue().get(key(ownerId));
+        if (previousDigest != null) redis.delete(codeKey(previousDigest));
+        String codeDigest = digest(code);
+        redis.opsForValue().set(key(ownerId), codeDigest, EXPIRE_MINUTES, TimeUnit.MINUTES);
+        redis.opsForValue().set(codeKey(codeDigest), String.valueOf(ownerId), EXPIRE_MINUTES, TimeUnit.MINUTES);
         return code;
     }
 
+    /** 仅凭一次性码查找待激活档案；返回对象只供服务端使用，不直接序列化给客户端。 */
+    public HjyOwner findPendingOwner(String code) {
+        if (code == null || !code.matches("[A-Za-z0-9_-]{16}")) return null;
+        String codeDigest = digest(code);
+        String id = redis.opsForValue().get(codeKey(codeDigest));
+        if (id == null || !codeDigest.equals(redis.opsForValue().get(key(Long.valueOf(id))))) return null;
+        HjyOwner owner = ownerMapper.selectOwnerById(Long.valueOf(id));
+        return owner != null && "Enable".equals(owner.getOwnerStatus()) && !hasPassword(owner) ? owner : null;
+    }
+
     public boolean activate(HjyOwner owner, String code, String passwordHash) {
-        if (owner == null || "Disable".equals(owner.getOwnerStatus()) || hasPassword(owner)
+        if (owner == null || !"Enable".equals(owner.getOwnerStatus()) || hasPassword(owner)
                 || code == null || code.trim().isEmpty()) return false;
-        Long consumed = redis.execute(CONSUME, Collections.singletonList(key(owner.getOwnerId())), digest(code.trim()));
+        String codeDigest = digest(code.trim());
+        Long consumed = redis.execute(CONSUME,
+                java.util.Arrays.asList(key(owner.getOwnerId()), codeKey(codeDigest)), codeDigest);
         if (!Long.valueOf(1).equals(consumed)) return false;
         return ownerMapper.activateOwner(owner.getOwnerId(), passwordHash) == 1;
     }
@@ -57,6 +75,8 @@ public class OwnerActivationService {
     }
 
     private String key(Long ownerId) { return KEY_PREFIX + ownerId; }
+
+    private String codeKey(String codeDigest) { return CODE_KEY_PREFIX + codeDigest; }
 
     private String digest(String value) {
         try {
